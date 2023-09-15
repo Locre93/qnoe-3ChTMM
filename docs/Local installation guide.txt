@@ -1,0 +1,4 @@
+1. Clone the repository to your hard-drive: https://github.com/Locre93/qnoe-3ChTMM.git
+2. Open the cmd
+3. Install the chosen package by typing: 
+	pip install -e "~\qnoe-3ChTMM"
