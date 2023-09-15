@@ -1,6 +1,6 @@
 from distutils.core import setup
 
-setup(name='qnoe_3ChTMM',
+setup(name='qnoe3ChTMM',
       version='1.0.0',
       description='',
       author='Lorenzo Orsini',

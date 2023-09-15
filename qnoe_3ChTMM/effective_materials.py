@@ -102,6 +102,7 @@ class hexagonalBoronNitride:
 		return Ex, By, Ez
 
 if __name__ == '__main__':
+	pass
 
 	# from matplotlib import rcParams 
 	# import matplotlib.pyplot as plt
