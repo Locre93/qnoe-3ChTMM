@@ -4,7 +4,6 @@ import itertools
 __version__ = "1.0.0"
 __author__ = "Lorenzo Orsini"
 
-# Functions for fast narray multiplications
 def levi_cevita_tensor(dim):
     arr=np.zeros(tuple([dim for _ in range(dim)]))
     for x in itertools.permutations(tuple(range(dim))):
@@ -12,16 +11,17 @@ def levi_cevita_tensor(dim):
         for i, j in zip(range(dim), x):
             mat[i, j] = 1
         arr[x]=int(np.linalg.det(mat))
+
     return arr
 
 def matrix_array_inverse_3x3(A):
     shape = A.shape
     dividend = np.einsum('aij,bmn,mikp,njkp->abkp',levi_cevita_tensor(3),levi_cevita_tensor(3),A,A)
     divisor = np.einsum('cde,fgh,fckp,gdkp,hekp->kp',levi_cevita_tensor(3),levi_cevita_tensor(3),A,A,A)
+
     return 3*np.divide(dividend,divisor)
 
 def SplitStructure(structure,position,site,units):
-
 	k = structure[0].k
 	
 	if np.isscalar(k):
@@ -33,10 +33,10 @@ def SplitStructure(structure,position,site,units):
 	return L, R
 
 # ------------------- CLASS SCATTERING MATRIX ------------------- #
+
 class ScatteringMatrix:
 
 	def __init__(self,k):
-
 		if np.isscalar(k):
 			k = [k]
 
@@ -48,7 +48,6 @@ class ScatteringMatrix:
 		self.S22 = np.zeros(dim,dtype=complex)
 
 	def Redheffer(self,𝐀,𝐁):  # 𝐂 = 𝐀⊗𝐁 - Update 𝐂 - Redheffer star product
-
 		D = 1/(1 - 𝐁.S11*𝐀.S22)
 		F = 1/(1 - 𝐀.S22*𝐁.S11)
 
@@ -58,7 +57,6 @@ class ScatteringMatrix:
 		self.S22 = 𝐁.S22 + 𝐁.S21*F*𝐀.S22*𝐁.S12
 
 	def Redheffer_left(self,other):  # 𝐀⊗𝐁 - Update 𝐀 - Redheffer star product
-
 		D = 1/(1 - other.S11*self.S22)
 		F = 1/(1 - self.S22*other.S11)
 
@@ -68,7 +66,6 @@ class ScatteringMatrix:
 		self.S22 = other.S22 + other.S21*F*self.S22*other.S12
 
 	def Redheffer_right(self,other):  # 𝐀⊗𝐁 - Update 𝐁 - Redheffer star product
-
 		D = 1/(1 - self.S11*other.S22)
 		F = 1/(1 - other.S22*self.S11)
 		
@@ -78,6 +75,7 @@ class ScatteringMatrix:
 		self.S11 = other.S11 + other.S12*D*self.S11*other.S21
 
 # ------------------- CLASS LAYER ------------------- #
+
 class layer:
 
 	def __init__(self,name,k,ϵ):
@@ -173,7 +171,6 @@ class outer_right(outer):
 # ------------------- CLASS TMM ------------------- #
 
 class TMM:
-
 	def __init__(self,structure):
 		self.structure = structure
 		self.k = structure[0].k
@@ -183,14 +180,12 @@ class TMM:
 		self.S = ScatteringMatrix(self.k)
 
 	def LayerUpdate(self):
-		
 		for layer in self.structure:
 			layer.update()
 
 		self.layer_update = True
 
-	def GlobalScatteringMatrix(self):
-		
+	def GlobalScatteringMatrix(self):		
 		if not self.layer_update:
 			self.LayerUpdate()
 
@@ -200,7 +195,6 @@ class TMM:
 		self.S_update = True
 
 	def GlobalScatteringCoefficients(self,cp,ccp):
-
 		self.structure[0].cp = cp
 		self.structure[-1].ccp = ccp
 
@@ -211,7 +205,6 @@ class TMM:
 		self.structure[-1].cp = self.S.S21*self.structure[0].cp + self.S.S22*self.structure[-1].ccp
 
 	def ReflectionImpedance(self):
-
 		if not self.S_update:
 			self.GlobalScatteringMatrix()
 
@@ -241,17 +234,10 @@ class TMM_3PD():
 		self.M22 = np.zeros(shape = (3,3,len(self.k)), dtype = complex) 
 
 	def SplitStructure(self,position,site,units):
-	
 		self.L = TMM(np.concatenate((self.structure[0:site],[inner(self.structure[site].name,self.k,self.structure[site].ϵ,position,units)],[outer_right(self.structure[site].name,self.k,self.structure[site].ϵ)])))
 		self.R = TMM(np.concatenate(([outer_left(self.structure[site].name,self.k,self.structure[site].ϵ)],[inner(self.structure[site].name,self.k,self.structure[site].ϵ, self.structure[site].length - position,units)],self.structure[site+1:len(self.structure)])))
 
-		self.l = (0.01 / self.k)/np.sqrt((np.abs(np.real(self.structure[site].ϵ)) + np.real(self.structure[site].ϵ))/2)
-
-		self.C = ((2*np.pi*(10**2)/self.k)**2)*np.exp(-2*(2*np.pi*(10**2)/self.k)*25e-9)
-		self.C = 0.1*self.C/max(self.C)
-
 	def UpdateM(self):
-
 		if not self.LR_update:
 			self.UpdateLR()
 
@@ -280,7 +266,6 @@ class TMM_3PD():
 		self.LR_update = True
 		
 	def Calculate3PD(self,c,γ):
-
 		if np.isscalar(c):
 			c = [c]
 
@@ -305,7 +290,6 @@ class TMM_3PD():
 		self.S3x3_update = True
 
 	def GlobalScatteringMatrix(self,c,γ):
-
 		if np.isscalar(c):
 			c = [c]
 
@@ -327,7 +311,6 @@ class TMM_3PD():
 		return M
 
 	def Scan(self,sites,resolution,units = 1e-9,c = 0.1, γ = 0):
-
 		MAP = np.zeros(shape = (1,len(self.k)), dtype = complex)
 		ϵ = np.ones(shape = (1,len(self.k)), dtype = complex)		
 		
@@ -352,15 +335,15 @@ class TMM_3PD():
 
 		return x, np.transpose(MAP), np.transpose(ϵ)
 
-class TMM_sSNOM(TMM_3PD):
-	def __init__(self,structure,position,site,units):
+class TMM_sSNOM_Simple(TMM_3PD):
+	def __init__(self,structure,position,site,units,coupling = 0.1):
 		super().__init__(structure,position,site,units)
 
-		self.c = 0.1*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 1))	# Coupling coefficient to model the sSNOM
-		self.O = np.zeros(len(self.k),dtype=complex)					# Near-Field optical response
+		self.coupling = coupling
+		self.c = coupling*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 1))	# Coupling coefficient to model the sSNOM
+		self.O = np.zeros(len(self.k),dtype=complex)						# Near-Field optical response
 
 	def Calculate3PD(self):
-
 		self.S3x3 = np.zeros(shape = (3,3,len(self.c)), dtype = complex)
 
 		t = (1+np.sqrt(1-2*(np.power(self.c,2))))/2
@@ -382,7 +365,6 @@ class TMM_sSNOM(TMM_3PD):
 		self.S3x3_update = True
 
 	def GlobalScatteringMatrix(self):
-
 		if not self.M_update:
 			self.UpdateM()
 
@@ -407,7 +389,6 @@ class TMM_sSNOM(TMM_3PD):
 		self.O = np.fft.fft(np.tile(B,N), axis = 1)[:,harm*N]
 
 	def Scan(self,sites,resolution,Eᴮᴳ,harm,units = 1e-9):
-
 		MAP = np.zeros(shape = (1,len(self.k)), dtype = complex)		
 		
 		x = []
@@ -421,7 +402,6 @@ class TMM_sSNOM(TMM_3PD):
 				self.SplitStructure(position,site,units)
 				self.UpdateLR()
 				self.UpdateM()
-				self.Calculate3PD()
 				self.NearField(Eᴮᴳ,harm)
 
 				MAP = np.vstack([MAP,self.O])
@@ -430,13 +410,49 @@ class TMM_sSNOM(TMM_3PD):
 
 		return x, np.transpose(MAP)
 
-	##################################################################################################
+class TMM_sSNOM_Advanced(TMM_3PD):
 
-	def Calculate_C(self,i):
+	def __init__(self,structure,position,site,units,coupling = 0.1):
+		super().__init__(structure,position,site,units)
+
+		self.coupling = coupling
+		self.c = np.arange(0,2*np.pi,0.2)
+		self.O = np.zeros(len(self.k),dtype=complex)				# Near-Field optical response
+
+	def SplitStructure(self,position,site,units):
+		self.L = TMM(np.concatenate((self.structure[0:site],[inner(self.structure[site].name,self.k,self.structure[site].ϵ,position,units)],[outer_right(self.structure[site].name,self.k,self.structure[site].ϵ)])))
+		self.R = TMM(np.concatenate(([outer_left(self.structure[site].name,self.k,self.structure[site].ϵ)],[inner(self.structure[site].name,self.k,self.structure[site].ϵ, self.structure[site].length - position,units)],self.structure[site+1:len(self.structure)])))
+
+		self.l = (0.01 / self.k)/np.sqrt((np.abs(np.real(self.structure[site].ϵ)) + np.real(self.structure[site].ϵ))/2)
+
+		self.C = ((2*np.pi*(10**2)/self.k)**2)*np.exp(-2*(2*np.pi*(10**2)/self.k)*25e-9)
+		self.C = self.coupling*self.C/max(self.C)
+
+	def Calculate3PD(self):
+		self.S3x3 = np.zeros(shape = (3,3,len(self.c)), dtype = complex)
+
+		t = (1+np.sqrt(1-2*(np.power(self.c,2))))/2
+		r = -(np.power(self.c,2))/(2*t)
+		b = -r-t
+		Co = self.c
+		Ci = self.c
+
+		self.S3x3[0,0,:] = b
+		self.S3x3[0,1,:] = Co
+		self.S3x3[0,2,:] = Co
+		self.S3x3[1,0,:] = Ci
+		self.S3x3[1,1,:] = r
+		self.S3x3[1,2,:] = t
+		self.S3x3[2,0,:] = Ci
+		self.S3x3[2,1,:] = t
+		self.S3x3[2,2,:] = r
+
+		self.S3x3_update = True
+
+	def Calculate_c(self,i):
 		self.c = self.C[i]*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 2)*2*np.pi*60e-9/self.l[i])			# The offset is wrong but we have to take into account the detector frequency cutoff
 
-	def GlobalScatteringMatrix_loop(self):
-
+	def GlobalScatteringMatrix(self):
 		I = np.eye(3,dtype=complex)
 		M = np.zeros(shape = (3,3,len(self.k),len(self.c)), dtype = complex)
 
@@ -444,7 +460,7 @@ class TMM_sSNOM(TMM_3PD):
 			self.UpdateM()
 
 		for i in range(len(self.k)):
-			self.Calculate_C(i)
+			self.Calculate_c(i)
 			self.Calculate3PD()	
 
 			for j in range(len(self.c)):
@@ -454,15 +470,13 @@ class TMM_sSNOM(TMM_3PD):
 
 		return M
 
-	def NearField_loop(self,Eᴮᴳ,harm):
-
+	def NearField(self,Eᴮᴳ,harm):
 		N = 500
-		B = np.abs(self.GlobalScatteringMatrix_loop()[0,0,:,:] + Eᴮᴳ)**2 
+		B = np.abs(self.GlobalScatteringMatrix()[0,0,:,:] + Eᴮᴳ)**2 
 
 		self.O = np.fft.fft(np.tile(B,N), axis = 1)[:,harm*N]
 
-	def Scan_loop(self,sites,resolution,Eᴮᴳ,harm,units = 1e-9):
-
+	def Scan(self,sites,resolution,Eᴮᴳ,harm,units = 1e-9,Coupling = 0.1):
 		MAP = np.zeros(shape = (1,len(self.k)), dtype = complex)		
 		
 		x = []
@@ -476,8 +490,7 @@ class TMM_sSNOM(TMM_3PD):
 				self.SplitStructure(position,site,units)
 				self.UpdateLR()
 				self.UpdateM()
-				self.Calculate3PD()
-				self.NearField_loop(Eᴮᴳ,harm)
+				self.NearField(Eᴮᴳ,harm)
 
 				MAP = np.vstack([MAP,self.O])
 
@@ -485,14 +498,18 @@ class TMM_sSNOM(TMM_3PD):
 
 		return x, np.transpose(MAP)
 
-# ------------------------------------------ #
-#                  Test code                 #
-# ------------------------------------------ #
+# ------------------------------------------------------------------------------------------------------ #
+#                                    Functions and class description                                     #
+# ------------------------------------------------------------------------------------------------------ #
 
-# Functions and class description
+# Notation:
+# The +(variables) written next to some classes mean that it is needed to initialize those extra variables 
+# with respect to the parent class.
 
-# def levi_cevita_tensor(dim):							- Levi Cevita Tensor rules
-# def matrix_array_inverse_3x3(A):						- Inverse of a 3x3 matrix grouped in a 4-dimensional array: Aij⁻¹ of A[:,:,i,j]
+# ------------------------------------------------------------------------------------------------------ #
+
+# def levi_cevita_tensor(dim):							- Functions for fast narray multiplications: Levi Cevita Tensor rules
+# def matrix_array_inverse_3x3(A):						- Functions for fast narray multiplications: Inverse of a 3x3 matrix grouped in a 4-dimensional array: Aij⁻¹ of A[:,:,i,j]
 # def SplitStructure(structure,position,site,units):    - Split a 1-dimensional array of layer objects in two ready to be used as input of TMM class
 
 # class ScatteringMatrix: (k)							- Scattering matrix object subdivided in the four quadrant used in the TMM
@@ -535,21 +552,43 @@ class TMM_sSNOM(TMM_3PD):
 # 	def GlobalScatteringMatrix(self,c,γ):					# Calculate the global scattering matrix of the structure with the 3-port-device
 # 	def Scan(self,sites,resolution,units,c,γ):				# Calculate the S11 element of the global scattering matrix at different positions of the 3-port-device within the structure
 
-# 	class TMM_sSNOM(TMM_3PD): +()						- subclass of the 3-port-device scattering type transfer matrix method		
+# 	class TMM_sSNOM_Simple(TMM_3PD): +(coupling)		- subclass of the 3-port-device scattering type transfer matrix method to simulate sSNOM response	
 # 		def Calculate3PD(self):									# Calculate the 3-port-device scattering matrix which model the sSNOM tip interaction
 # 		def GlobalScatteringMatrix(self):						# Calculate the global scattering matrix of the structure with the 3-port-device
 # 		def NearField(self,Eᴮᴳ,harm):							# Calculate the near-field optical responce
 # 		def Scan(self,sites,resolution,Eᴮᴳ,harm,units):			# Calculate the near-field optical responce at different positions of the 3-port-device within the structure
-#		def Calculate_C(self,i):								# Calculate the wavelength-dependent coupling coefficient
-# 		def GlobalScatteringMatrix_loop(self):					# Calculate the wavelength-dependent the global scattering matrix of the structure with the 3-port-device
-# 		def NearField_loop(self,Eᴮᴳ,harm):						# Calculate the wavelength-dependent the near-field optical responce
-# 		def Scan_loop(self,sites,resolution,Eᴮᴳ,harm,units):	# Calculate the wavelength-dependent the near-field optical responce at different positions of the 3-port-device within the structure
+
+# 	class TMM_sSNOM_Advanced(TMM_3PD): +(coupling)		- subclass of the 3-port-device scattering type transfer matrix method to simulate sSNOM response	
+# 		def Calculate3PD(self):									# Calculate the 3-port-device scattering matrix which model the sSNOM tip interaction	
+# 		def SplitStructure(self,position,site,units):			# Split the structure at the point of insertion of the wavelength-dependent 3-port-device
+#		def Calculate_c(self,i):								# Calculate the wavelength-dependent coupling coefficient
+# 		def GlobalScatteringMatrix(self):						# Calculate the wavelength-dependent the global scattering matrix of the structure with the 3-port-device
+# 		def NearField(self,Eᴮᴳ,harm):							# Calculate the near-field optical responce
+# 		def Scan(self,sites,resolution,Eᴮᴳ,harm,units):			# Calculate the near-field optical responce at different positions of the 3-port-device within the structure
+
+# ------------------------------------------------------------------------------------------------------ #
+
+# TO IMPROVE
+# 1. In class TMM_sSNOM_Simple and class TMM_sSNOM_Advanced the functions NearField, Calculate3PD and Scan are the same function, maybe we can implement a class sSNOM
+# 2. Writing the test code with all the functions tested
+# 3. This code works only for effective materials, setup the code for possible integration of EME or if the scattering matrices of the structure are available
+# 4. write down how to do this implementation
+# 5. Multiumodal implementation
+
+# URGENT
+# Test the modified functions!
+
+# ------------------------------------------------------------------------------------------------------ #
 
 if __name__ == '__main__':
 
 	print("Running the test code")
 
-	# import matplotlib.pyplot as plt
+	import matplotlib.pyplot as plt
+
+
+
+
 	# import plotly.express as px
 	# import PolaritonicEffectiveMaterials as Materials
 
