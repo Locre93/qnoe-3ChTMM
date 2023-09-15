@@ -8,5 +8,5 @@ Package for solving systems scattering process between one-dimensional guided mo
 ## License
 The package qnoe-3ChTMM is distributed under the GNU Lesser General Public License v3 (LGPLv3).
 
-## Cite as
+## Cite
 If you use qnoe-3ChTMM for your research please cite:
