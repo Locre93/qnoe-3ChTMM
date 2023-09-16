@@ -87,59 +87,58 @@ class ScatteringMatrix:
 			self.S12 = np.load(File)
 			self.S21 = np.load(File)
 			self.S22 = np.load(File)
-		return self
+		return
 
-# ------------------- CLASS LAYER ------------------- #
+# ------------------------ CLASS SECTION ------------------------ #
 
-class layer:
+class Section:
 
-	def __init__(self,name,k,ϵ):
-		self.name = name
-		self.k = k 										
-		self.ϵ = ϵ 
+	def __init__(self,name,k):
+		self.k = k 	
+		self.name = name	
 
-		if np.isscalar(ϵ):
-			ϵ = [ϵ]
-							
-		self.dim = len(ϵ) 								
-
-		self.Λ = np.zeros(self.dim,dtype=complex) 		
-
-		self.A = np.zeros(self.dim,dtype=complex)
-		self.B = np.zeros(self.dim,dtype=complex)
-		self.X = np.zeros(self.dim,dtype=complex)
-
-		self.loaded = False
 		self.S = ScatteringMatrix(self.k)
 
-	def calculate_Λ(self):
-		self.Λ = 1j*np.sqrt(self.ε)
-
 	def update(self):
-		if not self.loaded:
-			self.calculate_Λ()
-			self.calculate_A()
-			self.calculate_B()
-			self.calculate_X()
-			self.calculate_S()
+		pass
 
-	def load(self,S,splittable):
-		self.S.S11 = S.S11
-		self.S.S12 = S.S12
-		self.S.S21 = S.S21
-		self.S.S22 = S.S22
+	def load(self,FileName):
+		self.S.load(FileName)
 
-		self.loaded = True
-		self.splittable = splittable
-
-class inner(layer):
+class Chunk(Section):
 
 	def __init__(self,name,k,ϵ,length,units):
-		super().__init__(name,k,ϵ)
+		super().__init__(name,k)
+
+		self.ϵ = ϵ 
+		self.splittable = True
+
 		self.length = length
 		self.length_norm = length*units*2*np.pi*k/0.01
 
-		self.splittable = True
+class Interface(Section):
+
+	def __init__(self,name,k):
+		super().__init__(name,k)
+
+		self.splittable = False
+
+class Effective_Chunk(Chunk):
+
+	def __init__(self,name,k,ϵ,length,units):
+		super().__init__(name,k,ϵ,length,units)
+
+		if np.isscalar(ϵ):
+			ϵ = [ϵ]
+														
+		self.Λ = np.zeros(len(ϵ),dtype=complex) 		
+
+		self.A = np.zeros(len(ϵ),dtype=complex)
+		self.B = np.zeros(len(ϵ),dtype=complex)
+		self.X = np.zeros(len(ϵ),dtype=complex)
+
+	def calculate_Λ(self):
+		self.Λ = 1j*np.sqrt(self.ϵ)
 
 	def calculate_A(self):
 		self.A = 1 + self.Λ/self.ϵ
@@ -158,14 +157,33 @@ class inner(layer):
 		self.S.S21 = self.S.S12
 		self.S.S22 = self.S.S11
 
-class outer(layer):
+	def update(self):
+		self.calculate_Λ()
+		self.calculate_A()
+		self.calculate_B()
+		self.calculate_X()
+		self.calculate_S()
+
+class Effective_Interface(Interface):
 
 	def __init__(self,name,k,ϵ):
-		super().__init__(name,k,ϵ)
-		self.cp = np.zeros(self.dim,dtype=complex) 		# Propagating field coefficient
-		self.ccp = np.zeros(self.dim,dtype=complex) 	# Counter-propagating field coefficient 
+		super().__init__(name,k)
 
-		self.splittable = False
+		if np.isscalar(ϵ):
+			ϵ = [ϵ]
+
+		self.ϵ = ϵ
+		self.Λ = np.zeros(len(ϵ),dtype=complex) 		
+
+		self.A = np.zeros(len(ϵ),dtype=complex)
+		self.B = np.zeros(len(ϵ),dtype=complex)
+		self.X = np.zeros(len(ϵ),dtype=complex)
+
+		self.cp = np.zeros(len(ϵ),dtype=complex) 		# Propagating field coefficient
+		self.ccp = np.zeros(len(ϵ),dtype=complex) 		# Counter-propagating field coefficient 
+
+	def calculate_Λ(self):
+		self.Λ = 1j*np.sqrt(self.ϵ)
 
 	def calculate_A(self):
 		self.A = 1 + self.ϵ/self.Λ
@@ -176,7 +194,14 @@ class outer(layer):
 	def calculate_X(self):
 		pass
 
-class outer_left(outer):
+	def update(self):
+		self.calculate_Λ()
+		self.calculate_A()
+		self.calculate_B()
+		self.calculate_X()
+		self.calculate_S()
+
+class Effective_Interface_Left(Effective_Interface):
 
 	def __init__(self,name,k,ϵ):
 		super().__init__(name,k,ϵ)
@@ -187,7 +212,7 @@ class outer_left(outer):
 		self.S.S21 = (self.A - self.B*self.B/self.A)/2
 		self.S.S22 = self.B/self.A
 
-class outer_right(outer):
+class Effective_Interface_Right(Effective_Interface):
 
 	def __init__(self,name,k,ϵ):
 		super().__init__(name,k,ϵ)
@@ -205,22 +230,14 @@ class TMM:
 		self.structure = structure
 		self.k = structure[0].k
 		self.S_update = False
-		self.layer_update = False
 
 		self.S = ScatteringMatrix(self.k)
 
-	def LayerUpdate(self):
-		for layer in self.structure:
-			layer.update()
+	def GlobalScatteringMatrix(self):
 
-		self.layer_update = True
-
-	def GlobalScatteringMatrix(self):		
-		if not self.layer_update:
-			self.LayerUpdate()
-
-		for layer in self.structure:
-			self.S.Redheffer_left(layer.S)
+		for section in self.structure:
+			section.update()
+			self.S.Redheffer_left(section.S)
 
 		self.S_update = True
 
@@ -552,7 +569,6 @@ class TMM_sSNOM_Advanced(TMM_3PD):
 # class layer: (name,k,ϵ)								- Layer object which is caracterized by quantities needed to perform TMM
 # 	def calculate_Λ(self):									# Calculate the wavelength of the mode propagating through the layer
 # 	def update(self):										# Update the pre-defined to zeros or ones components of the layer
-#	def load(self,S,splittable)								# Load a scattering matrix into the layer
 
 # 	class inner(layer):	+(length,units)					- Finite size Layer
 # 		def calculate_A(self):								# Method to calculate element A
@@ -572,7 +588,6 @@ class TMM_sSNOM_Advanced(TMM_3PD):
 # 			def calculate_S(self):							# Method to calculate the scattering matrix of the layer
 
 # class TMM: (structure)								- Scattering type transfer matrix method object that need only the structure of the device 
-# 	def LayerUpdate(self):									# Calculate all the relevant quantities and scattering matrices of each layer
 # 	def GlobalScatteringMatrix(self):						# Calculate the scattering matrix of the structure, this method will check if the layers have been updated
 # 	def GlobalScatteringCoefficients(self,cp,ccp):			# Calculate the amplitudes of the reflection and transmission fields depending on the input: cp - propagating wave impinging to the structure from left-hand side and ccp - counter propagating wave impinging to the structure from the right-hand side 
 # 	def ReflectionImpedance(self):							# Calculate the reflection impedence of the structure of the left- and right-hand side
@@ -607,6 +622,7 @@ class TMM_sSNOM_Advanced(TMM_3PD):
 # 3. This code works only for effective materials, setup the code for possible integration of EME or if the scattering matrices of the structure are available
 # 4. write down how to do this implementation
 # 5. Multiumodal implementation
+# 6. Fix notation of the functions: all class with caps, all function ecc
 
 # URGENT
 # Test the modified functions!
@@ -616,7 +632,8 @@ class TMM_sSNOM_Advanced(TMM_3PD):
 # Around line 622 and 677 "Definition of the polaritonic material (hexagonal boron nitride hBN) [Reference X]" add the number of reference
 # Reference for the class layer EMPossible, all the quantities are calculated at notmal impedence
 
-# Maybe we need to implement new layer types: the interface and the chunk. An interface is not splittable and do not have a lenght a chunck yes, also the function split structure runs over the chuncks.
+# update function table
+# check resonances with old code
 
 # ------------------------------------------------------------------------------------------------------ #
 
@@ -628,28 +645,28 @@ if __name__ == '__main__':
 	print("Running the test code")
 
 	# Tests for the TMM class
-	TMM_Saving_Scattering_Matrices = True
-	TMM_Loading_Scattering_Matrices = True
+	TMM_Effective_Chunk_and_Interfaces = True
+	TMM_Chunk_and_Interfaces = False
 
-	if TMM_Saving_Scattering_Matrices:
+	if TMM_Effective_Chunk_and_Interfaces:
 
 		nm = 1e-9							# Units [m]
 		k = np.arange(1400,1580,0.1)		# Wavenumber [1/cm] - 1/λ
 
 		# From material.py:
 		# Definition of the polaritonic material (hexagonal boron nitride hBN) [Reference X]
-		thickness = 30   	# hBN thickness [nm]
+		thickness = 25   	# hBN thickness [nm]
 		isotope = 11 		# hBN isotope
 
 		hBN = hexagonalBoronNitride(isotope,thickness,nm)				# Creation of an instance of hexagonalBoronNitride class
 		A0 = np.real(hBN.ModeEffectivePermittivity(k, 0, [1,1]))		# Calculation of the effective dielectric permittivity ϵ for the mode A0 (Real part is chosen for a lossless system)
 		M1 = np.real(hBN.ModeEffectivePermittivity(k, 1, [1,-10000]))	# Calculation of the effective dielectric permittivity ϵ for the mode M1 (Real part is chosen for a lossless system)
 
-		# Definition of the system layers
-		LEFT_BOUNDARY = outer_left("M1",k,M1)
-		SPACING = inner("M1",k,M1,100,nm)
-		CAVITY = inner("A0",k,A0,500,nm)
-		RIGHT_BOUNDARY = outer_right("M1",k,M1)
+		# Definition of the system sections
+		LEFT_BOUNDARY = Effective_Interface_Left("M1",k,M1)
+		SPACING = Effective_Chunk("M1",k,M1,100,nm)
+		CAVITY = Effective_Chunk("A0",k,A0,500,nm)
+		RIGHT_BOUNDARY = Effective_Interface_Right("M1",k,M1)
 
 		structure = [LEFT_BOUNDARY,SPACING,CAVITY,SPACING,RIGHT_BOUNDARY]
 
@@ -664,12 +681,13 @@ if __name__ == '__main__':
 		plt.xlabel('Wavenumber, cm⁻¹')
 		plt.show()
 
-		LEFT_BOUNDARY.S.save("Test 01 - Left boundary scattering matrix.npy")
-		SPACING.S.save("Test 01 - Spacing scattering matrix.npy")
-		CAVITY.S.save("Test 01 - Cavity scattering matrix.npy")
-		RIGHT_BOUNDARY.S.save("Test 01 - Right boundary scattering matrix.npy")
+		# Saving
+		# LEFT_BOUNDARY.S.save("Test 01 - Left boundary scattering matrix.npy")
+		# SPACING.S.save("Test 01 - Spacing scattering matrix.npy")
+		# CAVITY.S.save("Test 01 - Cavity scattering matrix.npy")
+		# RIGHT_BOUNDARY.S.save("Test 01 - Right boundary scattering matrix.npy")
 
-	if TMM_Loading_Scattering_Matrices:
+	if TMM_Chunk_and_Interfaces:
 
 		nm = 1e-9							# Units [m]
 		k = np.arange(1400,1580,0.1)		# Wavenumber [1/cm] - 1/λ
@@ -683,18 +701,17 @@ if __name__ == '__main__':
 		A0 = np.real(hBN.ModeEffectivePermittivity(k, 0, [1,1]))		# Calculation of the effective dielectric permittivity ϵ for the mode A0 (Real part is chosen for a lossless system)
 		M1 = np.real(hBN.ModeEffectivePermittivity(k, 1, [1,-10000]))	# Calculation of the effective dielectric permittivity ϵ for the mode M1 (Real part is chosen for a lossless system)
 
-		# Definition of the system layers
-		LEFT_BOUNDARY = outer_left("M1",k,M1)
-		SPACING = inner("M1",k,M1,100,nm)
-		CAVITY = inner("A0",k,A0,500,nm)
-		RIGHT_BOUNDARY = outer_right("M1",k,M1)
+		# Definition of the system sections
+		LEFT_BOUNDARY = Interface("M1",k)
+		SPACING = Chunk("M1",k,M1,100,nm)
+		CAVITY = Chunk("A0",k,A0,200,nm)
+		RIGHT_BOUNDARY = Interface("M1",k)
 
-		AUX = ScatteringMatrix(0)
-
-		LEFT_BOUNDARY.load(AUX.load("Test 01 - Left boundary scattering matrix.npy"),splittable=True)
-		SPACING.load(AUX.load("Test 01 - Spacing scattering matrix.npy"),splittable=True)
-		CAVITY.load(AUX.load("Test 01 - Cavity scattering matrix.npy"),splittable=True)
-		RIGHT_BOUNDARY.load(AUX.load("Test 01 - Right boundary scattering matrix.npy"),splittable=True)
+		# Loading
+		LEFT_BOUNDARY.load("Test 01 - Left boundary scattering matrix.npy")
+		SPACING.load("Test 01 - Spacing scattering matrix.npy")
+		CAVITY.load("Test 01 - Cavity scattering matrix.npy")
+		RIGHT_BOUNDARY.load("Test 01 - Right boundary scattering matrix.npy")
 
 		structure = [LEFT_BOUNDARY,SPACING,CAVITY,SPACING,RIGHT_BOUNDARY]
 
@@ -708,12 +725,6 @@ if __name__ == '__main__':
 		plt.ylabel('Scattering element S12')
 		plt.xlabel('Wavenumber, cm⁻¹')
 		plt.show()
-
-# Commit
-# Saving and loading matrices implemented succesfully. New functions and the code is tested until the class TMM. If the matrix was loaded, the layers are not updated and the global scattering matrix is computed directly. There is also two new local variables (booleans) in the class layer: splittable and loaded.
-
-
-
 
 
 	# import plotly.express as px
