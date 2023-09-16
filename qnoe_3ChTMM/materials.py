@@ -2,6 +2,7 @@ import numpy as np
 
 __version__ = "1.0.0"
 __author__ = "Lorenzo Orsini"
+__contributors__ = ["Matteo Ceccanti"]
 
 class hexagonalBoronNitride:
 	def __init__(self, isotope, thickness,units):

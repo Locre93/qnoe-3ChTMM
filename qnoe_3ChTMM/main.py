@@ -3,6 +3,7 @@ import itertools
 
 __version__ = "1.0.0"
 __author__ = "Lorenzo Orsini"
+__contributors__ = ["Sergi Battle Porro"]
 
 def levi_cevita_tensor(dim):
     arr=np.zeros(tuple([dim for _ in range(dim)]))
@@ -20,17 +21,6 @@ def matrix_array_inverse_3x3(A):
     divisor = np.einsum('cde,fgh,fckp,gdkp,hekp->kp',levi_cevita_tensor(3),levi_cevita_tensor(3),A,A,A)
 
     return 3*np.divide(dividend,divisor)
-
-def SplitStructure(structure,position,site,units):
-	k = structure[0].k
-	
-	if np.isscalar(k):
-		k = [k]
-
-	L = TMM(np.concatenate((structure[0:site],[inner(structure[site].name,k,structure[site].ϵ,position,units)],[outer_right(structure[site].name,k,structure[site].ϵ)])))
-	R = TMM(np.concatenate(([outer_left(structure[site].name,k,structure[site].ϵ)],[inner(structure[site].name,k,structure[site].ϵ, structure[site].length - position,units)],structure[site+1:len(structure)])))
-	
-	return L, R
 
 # ------------------- CLASS SCATTERING MATRIX ------------------- #
 
@@ -223,7 +213,41 @@ class Effective_Interface_Right(Effective_Interface):
 		self.S.S21 = 2/self.A
 		self.S.S22 = - self.B/self.A
 
-# ------------------- CLASS TMM ------------------- #
+# ----------------------- CLASS STRUCTURE ----------------------- #
+
+class Structure:
+
+	def __init__(self,array_of_sections):
+		self.structure = array_of_sections
+
+	def Split(self,position,site,units):
+
+		k = self.structure[0].k
+		if np.isscalar(k):
+			k = [k]
+
+		j = 0
+		target = None
+		for i in range(len(self.structure)):
+			if self.structure[i].splittable:
+				j = j + 1
+			if site == j:
+				target = i
+				break
+			
+		if site > j:
+			raise Exception("In function Structure.Split - the chosen site exceeds the chunks available in the structure.")
+
+		if type(self.structure[target]) == Effective_Chunk:
+			L = TMM(np.concatenate((self.structure[0:target],[Effective_Chunk(self.structure[target].name,k,self.structure[target].ϵ,position,units)],[Effective_Interface_Right(self.structure[target].name,k,self.structure[target].ϵ)])))
+			R = TMM(np.concatenate(([Effective_Interface_Left(self.structure[target].name,k,self.structure[target].ϵ)],[Effective_Chunk(self.structure[target].name,k,self.structure[target].ϵ, self.structure[target].length - position,units)],self.structure[target+1:len(self.structure)])))
+
+		elif type(self.structure[target]) == Chunk:
+			print("Other")
+
+		return L,R
+
+# --------------------- CLASS TMM & TMM_3PD --------------------- #
 
 class TMM:
 	def __init__(self,structure):
@@ -234,7 +258,6 @@ class TMM:
 		self.S = ScatteringMatrix(self.k)
 
 	def GlobalScatteringMatrix(self):
-
 		for section in self.structure:
 			section.update()
 			self.S.Redheffer_left(section.S)
@@ -262,8 +285,8 @@ class TMM:
 
 class TMM_3PD():
 
-	def __init__(self,structure,position,site,units):
-		self.k = structure[0].k
+	def __init__(self,array_of_sections,position,site,units):
+		self.k = array_of_sections[0].k
 
 		if np.isscalar(self.k):
 			self.k = [self.k]
@@ -272,8 +295,8 @@ class TMM_3PD():
 		self.LR_update = False
 		self.S3x3_update = False
 
-		self.structure = structure
-		self.SplitStructure(position,site,units)
+		self.structure = Structure(array_of_sections)
+		self.L,self.R = self.structure.Split(position,site,units)
 
 		self.M11 = np.zeros(shape = (3,3,len(self.k)), dtype = complex)
 		self.M12 = np.zeros(shape = (3,3,len(self.k)), dtype = complex) 
@@ -281,8 +304,7 @@ class TMM_3PD():
 		self.M22 = np.zeros(shape = (3,3,len(self.k)), dtype = complex) 
 
 	def SplitStructure(self,position,site,units):
-		self.L = TMM(np.concatenate((self.structure[0:site],[inner(self.structure[site].name,self.k,self.structure[site].ϵ,position,units)],[outer_right(self.structure[site].name,self.k,self.structure[site].ϵ)])))
-		self.R = TMM(np.concatenate(([outer_left(self.structure[site].name,self.k,self.structure[site].ϵ)],[inner(self.structure[site].name,self.k,self.structure[site].ϵ, self.structure[site].length - position,units)],self.structure[site+1:len(self.structure)])))
+		self.L,self.R = self.structure.Split(position,site,units)
 
 	def UpdateM(self):
 		if not self.LR_update:
@@ -381,6 +403,11 @@ class TMM_3PD():
 		ϵ = np.delete(ϵ, 0, 0)
 
 		return x, np.transpose(MAP), np.transpose(ϵ)
+
+
+
+
+
 
 class TMM_sSNOM_Simple(TMM_3PD):
 	def __init__(self,structure,position,site,units,coupling = 0.1):
@@ -566,6 +593,8 @@ class TMM_sSNOM_Advanced(TMM_3PD):
 #	def save(self,FileName)									# Save the scattering matrix to a numpy file (S11,S12,S21,S22)
 #	def load(self,FileName)									# Load the scattering matrix from a numpy file (S11,S12,S21,S22)
 
+
+
 # class layer: (name,k,ϵ)								- Layer object which is caracterized by quantities needed to perform TMM
 # 	def calculate_Λ(self):									# Calculate the wavelength of the mode propagating through the layer
 # 	def update(self):										# Update the pre-defined to zeros or ones components of the layer
@@ -586,6 +615,9 @@ class TMM_sSNOM_Advanced(TMM_3PD):
 
 # 		class outer_right(outer): +()					- Right side semi-infinite Layer
 # 			def calculate_S(self):							# Method to calculate the scattering matrix of the layer
+
+
+
 
 # class TMM: (structure)								- Scattering type transfer matrix method object that need only the structure of the device 
 # 	def GlobalScatteringMatrix(self):						# Calculate the scattering matrix of the structure, this method will check if the layers have been updated
@@ -621,7 +653,6 @@ class TMM_sSNOM_Advanced(TMM_3PD):
 # 2. Writing the test code with all the functions tested
 # 3. This code works only for effective materials, setup the code for possible integration of EME or if the scattering matrices of the structure are available
 # 4. write down how to do this implementation
-# 5. Multiumodal implementation
 # 6. Fix notation of the functions: all class with caps, all function ecc
 
 # URGENT
@@ -635,6 +666,8 @@ class TMM_sSNOM_Advanced(TMM_3PD):
 # update function table
 # check resonances with old code
 
+# Definition of chunk: a scattering martix which propagates only!
+
 # ------------------------------------------------------------------------------------------------------ #
 
 if __name__ == '__main__':
@@ -644,23 +677,29 @@ if __name__ == '__main__':
 
 	print("Running the test code")
 
-	# Tests for the TMM class
-	TMM_Effective_Chunk_and_Interfaces = True
+	# Tests for the TMM class, save and load
+	TMM_Effective_Chunk_and_Interfaces = False
 	TMM_Chunk_and_Interfaces = False
 
+	# Tests for the 3PD_TMM class
+	TMM_3PD_Effective_Chunk_and_Interfaces = False
+	TMM_3PD_Chunk_and_Interfaces = False
+
+	temp = True
+
+	nm = 1e-9							# Units [m]
+	k = np.arange(1400,1580,0.1)		# Wavenumber [1/cm] - 1/λ
+
+	# From material.py:
+	# Definition of the polaritonic material (hexagonal boron nitride hBN) [Reference X]
+	thickness = 30   	# hBN thickness [nm]
+	isotope = 11 		# hBN isotope
+
+	hBN = hexagonalBoronNitride(isotope,thickness,nm)				# Creation of an instance of hexagonalBoronNitride class
+	A0 = np.real(hBN.ModeEffectivePermittivity(k, 0, [1,1]))		# Calculation of the effective dielectric permittivity ϵ for the mode A0 (Real part is chosen for a lossless system)
+	M1 = np.real(hBN.ModeEffectivePermittivity(k, 1, [1,-10000]))	# Calculation of the effective dielectric permittivity ϵ for the mode M1 (Real part is chosen for a lossless system)
+
 	if TMM_Effective_Chunk_and_Interfaces:
-
-		nm = 1e-9							# Units [m]
-		k = np.arange(1400,1580,0.1)		# Wavenumber [1/cm] - 1/λ
-
-		# From material.py:
-		# Definition of the polaritonic material (hexagonal boron nitride hBN) [Reference X]
-		thickness = 25   	# hBN thickness [nm]
-		isotope = 11 		# hBN isotope
-
-		hBN = hexagonalBoronNitride(isotope,thickness,nm)				# Creation of an instance of hexagonalBoronNitride class
-		A0 = np.real(hBN.ModeEffectivePermittivity(k, 0, [1,1]))		# Calculation of the effective dielectric permittivity ϵ for the mode A0 (Real part is chosen for a lossless system)
-		M1 = np.real(hBN.ModeEffectivePermittivity(k, 1, [1,-10000]))	# Calculation of the effective dielectric permittivity ϵ for the mode M1 (Real part is chosen for a lossless system)
 
 		# Definition of the system sections
 		LEFT_BOUNDARY = Effective_Interface_Left("M1",k,M1)
@@ -689,18 +728,6 @@ if __name__ == '__main__':
 
 	if TMM_Chunk_and_Interfaces:
 
-		nm = 1e-9							# Units [m]
-		k = np.arange(1400,1580,0.1)		# Wavenumber [1/cm] - 1/λ
-
-		# From material.py:
-		# Definition of the polaritonic material (hexagonal boron nitride hBN) [Reference X]
-		thickness = 30   	# hBN thickness [nm]
-		isotope = 11 		# hBN isotope
-
-		hBN = hexagonalBoronNitride(isotope,thickness,nm)				# Creation of an instance of hexagonalBoronNitride class
-		A0 = np.real(hBN.ModeEffectivePermittivity(k, 0, [1,1]))		# Calculation of the effective dielectric permittivity ϵ for the mode A0 (Real part is chosen for a lossless system)
-		M1 = np.real(hBN.ModeEffectivePermittivity(k, 1, [1,-10000]))	# Calculation of the effective dielectric permittivity ϵ for the mode M1 (Real part is chosen for a lossless system)
-
 		# Definition of the system sections
 		LEFT_BOUNDARY = Interface("M1",k)
 		SPACING = Chunk("M1",k,M1,100,nm)
@@ -725,6 +752,27 @@ if __name__ == '__main__':
 		plt.ylabel('Scattering element S12')
 		plt.xlabel('Wavenumber, cm⁻¹')
 		plt.show()
+
+	if temp:
+
+		# A = Chunk("Chunk",k,A0,200,nm)
+		# B = Interface("Interface",k)
+
+		A = Effective_Interface("Effective_Interface",k,A0)
+		B = Effective_Chunk("Effective_Chunk",k,A0,200,nm)
+		C = Effective_Chunk("Effective_Chunk",k,A0,300,nm)
+
+		structure = Structure([B])
+
+		position = 50
+		site = 1
+		 
+		L,R = structure.Split(position,site,nm)
+
+
+# Commit: creation of the Structure class to have a more consiten splitting of the array of , regardless if it is effective or made by a sequence of chunk, interface matrices.
+
+
 
 
 	# import plotly.express as px
