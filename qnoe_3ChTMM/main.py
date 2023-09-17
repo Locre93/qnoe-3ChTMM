@@ -266,17 +266,16 @@ class Structure:
 # --------------------- CLASS TMM & TMM_3PD --------------------- #
 
 class TMM:
-	def __init__(self,array_of_sections,update = True):
+	def __init__(self,array_of_sections):
 		self.array_of_sections = array_of_sections
 		self.k = array_of_sections[0].k
 		self.S_update = False
-		self.update = update
 
 		self.S = ScatteringMatrix(self.k)
 
 	def GlobalScatteringMatrix(self):
 		for section in self.array_of_sections:
-			section.update() if self.update else DoNothing()
+			section.update()
 			self.S.Redheffer_left(section.S)
 
 		self.S_update = True
@@ -312,6 +311,7 @@ class TMM_3PD():
 
 	def SplitStructure(self,position,site,units):
 		self.L,self.R = self.structure.Split(position,site,units)
+		self.LR_update = False
 
 	def UpdateM(self):
 		if not self.LR_update:
@@ -620,7 +620,7 @@ class TMM_sSNOM_Advanced(TMM_sSNOM):
 # URGENT
 # Test the modified functions!
 # Check calculate_Λ against self.l = (0.01 / self.k)/np.sqrt((np.abs(np.real(self.structure[site].ϵ)) + np.real(self.structure[site].ϵ))/2)
-# Split structure to identify the splittable things
+# Maybe need re-organize the Split fuction and class Structure (a bit redundant)
 
 # update function table
 # check resonances with old code
@@ -636,11 +636,13 @@ if __name__ == '__main__':
 	import matplotlib.pyplot as plt
 	from materials import *
 
-	print("Running the test code")
+	print("Running the test code:")
 
 	Equivalence = False 				# Test the equivalence of Chunks and Interfaces vs Effective_Chunks and Effective_Interfaces
 	TransferMatrixMethod = False 		# Test the standard TMM implementation with Chunks, Interfaces, Effective_Chunks and Effective_Interfaces (Equivalence test execution needed at least once)
 	TransferMatrixMethod_3PD = True 	# Test the 3PD TMM implementation: Splitting of the structure, GlobalScatteringMatrix γ dependence and scan for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces (Equivalence test execution needed at least once)
+	GlobalScatteringMatrix_3PD = True
+	Splitting = False
 
 	nm = 1e-9							# Units [m]
 	k = np.arange(1400,1580,0.1)		# Wavenumber [1/cm] - 1/λ
@@ -772,8 +774,8 @@ if __name__ == '__main__':
 		CAVITY = Effective_Chunk("A0",k,A0,400,nm)
 		RIGHT = Effective_Interface_Right("M1",k,M1)
 
-		Effective_system = TMM_3PD([LEFT,SPACING,CAVITY,SPACING,RIGHT],position,site,units)
-		Effective_system.UpdateLR()
+		Effective_system_TMM_3PD = TMM_3PD([LEFT,SPACING,CAVITY,SPACING,RIGHT],position,site,units)
+		Effective_system_TMM = TMM([LEFT,SPACING,CAVITY,SPACING,RIGHT])
 
 		# Sequence system
 		A0_M1 = Interface("A0_M1",k)
@@ -785,41 +787,98 @@ if __name__ == '__main__':
 		A0_M1.load("Test 01 - effective A0_M1 interface scattering matrix.npy")
 		M1_A0.load("Test 01 - effective M1_A0 interface scattering matrix.npy")
 
-		Sequence_system = TMM_3PD([SPACING,M1_A0,CAVITY,A0_M1,SPACING],position,site,units)
-		Sequence_system.UpdateLR()
+		Sequence_system_TMM_3PD = TMM_3PD([SPACING,M1_A0,CAVITY,A0_M1,SPACING],position,site,units)
+		Sequence_system_TMM = TMM([SPACING,M1_A0,CAVITY,A0_M1,SPACING])
 
-		# Comparison - L and R
-		plt.figure(figsize=(12,6))
-		plt.subplot(121)
-		plt.plot(k,np.real(Sequence_system.L.S.S12),'b')
-		plt.plot(k,np.real(Effective_system.L.S.S12),'r--',dashes=(5, 10))
-		plt.title('Re{L$_{12}$}', size=16)
-		plt.xlabel('Wavenumber, cm⁻¹', size=16)
-		plt.subplot(122)
-		plt.plot(k,np.imag(Sequence_system.L.S.S12),'b')
-		plt.plot(k,np.imag(Effective_system.L.S.S12),'r--',dashes=(5, 10))
-		plt.title('Im{L$_{12}$}', size=16)
-		plt.xlabel('Wavenumber, cm⁻¹', size=16)
-		plt.show()
+		if Splitting:
+			Effective_system_TMM_3PD.UpdateLR()
+			Sequence_system_TMM_3PD.UpdateLR()
 
-		plt.figure(figsize=(12,6))
-		plt.subplot(121)
-		plt.plot(k,np.real(Sequence_system.R.S.S12),'b')
-		plt.plot(k,np.real(Effective_system.R.S.S12),'r--',dashes=(5, 10))
-		plt.title('Re{R$_{12}$}', size=16)
-		plt.xlabel('Wavenumber, cm⁻¹', size=16)
-		plt.subplot(122)
-		plt.plot(k,np.imag(Sequence_system.R.S.S12),'b')
-		plt.plot(k,np.imag(Effective_system.R.S.S12),'r--',dashes=(5, 10))
-		plt.title('Im{R$_{12}$}', size=16)
-		plt.xlabel('Wavenumber, cm⁻¹', size=16)
-		plt.show()
+			# Comparison - L and R
+			plt.figure(figsize=(12,6))
+			plt.subplot(121)
+			plt.plot(k,np.real(Sequence_system_TMM_3PD.L.S.S12),'b')
+			plt.plot(k,np.real(Effective_system_TMM_3PD.L.S.S12),'r--',dashes=(5, 10))
+			plt.title('Re{L$_{12}$}', size=16)
+			plt.xlabel('Wavenumber, cm⁻¹', size=16)
+			plt.subplot(122)
+			plt.plot(k,np.imag(Sequence_system_TMM_3PD.L.S.S12),'b')
+			plt.plot(k,np.imag(Effective_system_TMM_3PD.L.S.S12),'r--',dashes=(5, 10))
+			plt.title('Im{L$_{12}$}', size=16)
+			plt.xlabel('Wavenumber, cm⁻¹', size=16)
+			plt.show()
 
-		# 3. 3-PORT DEVICE CLASS
+			plt.figure(figsize=(12,6))
+			plt.subplot(121)
+			plt.plot(k,np.real(Sequence_system_TMM_3PD.R.S.S12),'b')
+			plt.plot(k,np.real(Effective_system_TMM_3PD.R.S.S12),'r--',dashes=(5, 10))
+			plt.title('Re{R$_{12}$}', size=16)
+			plt.xlabel('Wavenumber, cm⁻¹', size=16)
+			plt.subplot(122)
+			plt.plot(k,np.imag(Sequence_system_TMM_3PD.R.S.S12),'b')
+			plt.plot(k,np.imag(Effective_system_TMM_3PD.R.S.S12),'r--',dashes=(5, 10))
+			plt.title('Im{R$_{12}$}', size=16)
+			plt.xlabel('Wavenumber, cm⁻¹', size=16)
+			plt.show()
 
+		if GlobalScatteringMatrix_3PD:
 
+			# Test at different coupling coefficient
 
-# Commit: 
+			c = [0.,0.2,0.5]
+
+			Effective_system_TMM.GlobalScatteringMatrix()
+			Effective_SG_3PD = Effective_system_TMM_3PD.GlobalScatteringMatrix(c=c,γ=0)
+
+			Sequence_system_TMM.GlobalScatteringMatrix()
+			Sequence_SG_3PD = Sequence_system_TMM_3PD.GlobalScatteringMatrix(c=c,γ=0)
+
+			plt.figure(figsize=(12,6))
+			plt.title('Transmission through the right near-field channel', size=16)
+
+			plt.subplot(121)
+			plt.plot(k,np.abs(Effective_system_TMM.S.S12),'b')
+			plt.plot(k,np.abs(Effective_SG_3PD[2,1,:,0]),'r--',dashes=(5, 10))					# No coupling between the far-field and near-field channels (c = 0)
+			plt.plot(k,np.abs(Effective_SG_3PD[2,1,:,1]),'g--',dashes=(5, 2))					# Weak coupling between the far-field and near-field channels (c = 0.2)
+			plt.plot(k,np.abs(Effective_SG_3PD[2,1,:,2]),'black')								# Strong coupling between the far-field and near-field channels (c = 0.5)
+			plt.title('Effective', size=16)
+			plt.xlabel('Wavenumber, cm⁻¹', size=16)
+
+			plt.subplot(122)
+			plt.plot(k,np.abs(Sequence_system_TMM.S.S12),'b')
+			plt.plot(k,np.abs(Sequence_SG_3PD[2,1,:,0]),'r--',dashes=(5, 10))					# No coupling between the far-field and near-field channels (c = 0)
+			plt.plot(k,np.abs(Sequence_SG_3PD[2,1,:,1]),'g--',dashes=(5, 2))					# Weak coupling between the far-field and near-field channels (c = 0.2)
+			plt.plot(k,np.abs(Sequence_SG_3PD[2,1,:,2]),'black')								# Strong coupling between the far-field and near-field channels (c = 0.5)
+			plt.title('Sequence', size=16)
+			plt.xlabel('Wavenumber, cm⁻¹', size=16)
+			plt.show()
+
+			# Test at different phase coefficient
+			c = 0.1
+			
+
+			plt.figure(figsize=(12,6))
+			S31 = []
+			for γ in np.arange(0,2*np.pi,0.1):
+
+				Effective_system_TMM_3PD.S3x3_update = False
+				Effective_SG_3PD = Effective_system_TMM_3PD.GlobalScatteringMatrix(c = 0.1,γ = γ)
+
+				S31 = np.append(S31,Effective_system_TMM_3PD.S3x3[2,0,:])
+
+				plt.subplot(121)
+				plt.plot(k,np.abs(Effective_SG_3PD[2,1,:]))
+
+			
+			plt.subplot(121)
+			plt.title('Transmission through the right near-field channel', size=16)
+
+			plt.subplot(122)
+			plt.title('3-port device coupling phase', size=16)
+			plt.plot(np.angle(S31))
+			plt.show()
+
+# Commit:
 
 
 	# # ------------------------- TMM 3-port-device ---------------------- #
