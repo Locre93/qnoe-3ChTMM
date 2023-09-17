@@ -4,6 +4,7 @@ import itertools
 __version__ = "1.0.0"
 __author__ = "Lorenzo Orsini"
 __contributors__ = ["Sergi Battle Porro"]
+__references__ = ["https://empossible.net/academics/emp5337/"]
 
 def levi_cevita_tensor(dim):
     arr=np.zeros(tuple([dim for _ in range(dim)]))
@@ -21,6 +22,9 @@ def matrix_array_inverse_3x3(A):
     divisor = np.einsum('cde,fgh,fckp,gdkp,hekp->kp',levi_cevita_tensor(3),levi_cevita_tensor(3),A,A,A)
 
     return 3*np.divide(dividend,divisor)
+
+def DoNothing():
+	pass
 
 # ------------------- CLASS SCATTERING MATRIX ------------------- #
 
@@ -77,7 +81,6 @@ class ScatteringMatrix:
 			self.S12 = np.load(File)
 			self.S21 = np.load(File)
 			self.S22 = np.load(File)
-		return
 
 # ------------------------ CLASS SECTION ------------------------ #
 
@@ -106,6 +109,24 @@ class Chunk(Section):
 		self.length = length
 		self.length_norm = length*units*2*np.pi*k/0.01
 
+		self.Λ = np.zeros(len(ϵ),dtype=complex)
+		self.X = np.zeros(len(ϵ),dtype=complex)
+
+	def calculate_Λ(self):
+		self.Λ = 1j*np.sqrt(self.ϵ)
+
+	def calculate_X(self):
+		self.X = np.exp(self.Λ*self.length_norm)
+
+	def calculate_S(self):
+		self.S.S12 = self.X
+		self.S.S21 = self.X
+
+	def update(self):
+		self.calculate_Λ()
+		self.calculate_X()
+		self.calculate_S()
+
 class Interface(Section):
 
 	def __init__(self,name,k):
@@ -120,24 +141,15 @@ class Effective_Chunk(Chunk):
 
 		if np.isscalar(ϵ):
 			ϵ = [ϵ]
-														
-		self.Λ = np.zeros(len(ϵ),dtype=complex) 		
 
 		self.A = np.zeros(len(ϵ),dtype=complex)
 		self.B = np.zeros(len(ϵ),dtype=complex)
-		self.X = np.zeros(len(ϵ),dtype=complex)
-
-	def calculate_Λ(self):
-		self.Λ = 1j*np.sqrt(self.ϵ)
 
 	def calculate_A(self):
 		self.A = 1 + self.Λ/self.ϵ
 
 	def calculate_B(self):
 		self.B = 1 - self.Λ/self.ϵ
-
-	def calculate_X(self):
-		self.X = np.exp(self.Λ*self.length_norm)
 
 	def calculate_S(self):
 		AUX = 1/(self.A - self.X*self.B*self.X*self.B/self.A)
@@ -238,41 +250,36 @@ class Structure:
 		if site > j:
 			raise Exception("In function Structure.Split - the chosen site exceeds the chunks available in the structure.")
 
+		if self.structure[target].length - position <= 0:
+			raise Exception("In function Structure.Split - the chosen position exceeds the chunk lenght.")
+
 		if type(self.structure[target]) == Effective_Chunk:
 			L = TMM(np.concatenate((self.structure[0:target],[Effective_Chunk(self.structure[target].name,k,self.structure[target].ϵ,position,units)],[Effective_Interface_Right(self.structure[target].name,k,self.structure[target].ϵ)])))
 			R = TMM(np.concatenate(([Effective_Interface_Left(self.structure[target].name,k,self.structure[target].ϵ)],[Effective_Chunk(self.structure[target].name,k,self.structure[target].ϵ, self.structure[target].length - position,units)],self.structure[target+1:len(self.structure)])))
 
 		elif type(self.structure[target]) == Chunk:
-			print("Other")
+			L = TMM(np.concatenate((self.structure[0:target],[Chunk(self.structure[target].name,k,self.structure[target].ϵ,position,units)])))
+			R = TMM(np.concatenate(([Chunk(self.structure[target].name,k,self.structure[target].ϵ, self.structure[target].length - position,units)],self.structure[target+1:len(self.structure)])))
 
 		return L,R
 
 # --------------------- CLASS TMM & TMM_3PD --------------------- #
 
 class TMM:
-	def __init__(self,structure):
-		self.structure = structure
-		self.k = structure[0].k
+	def __init__(self,array_of_sections,update = True):
+		self.array_of_sections = array_of_sections
+		self.k = array_of_sections[0].k
 		self.S_update = False
+		self.update = update
 
 		self.S = ScatteringMatrix(self.k)
 
 	def GlobalScatteringMatrix(self):
-		for section in self.structure:
-			section.update()
+		for section in self.array_of_sections:
+			section.update() if self.update else DoNothing()
 			self.S.Redheffer_left(section.S)
 
 		self.S_update = True
-
-	def GlobalScatteringCoefficients(self,cp,ccp):
-		self.structure[0].cp = cp
-		self.structure[-1].ccp = ccp
-
-		if not self.S_update:
-			self.GlobalScatteringMatrix()
-
-		self.structure[0].ccp = self.S.S11*self.structure[0].cp + self.S.S12*self.structure[-1].ccp
-		self.structure[-1].cp = self.S.S21*self.structure[0].cp + self.S.S22*self.structure[-1].ccp
 
 	def ReflectionImpedance(self):
 		if not self.S_update:
@@ -409,12 +416,12 @@ class TMM_3PD():
 
 
 
-class TMM_sSNOM_Simple(TMM_3PD):
-	def __init__(self,structure,position,site,units,coupling = 0.1):
-		super().__init__(structure,position,site,units)
+
+class TMM_sSNOM(TMM_3PD):
+	def __init__(self,array_of_sections,position,site,units,coupling = 0.1):
+		super().__init__(array_of_sections,position,site,units)
 
 		self.coupling = coupling
-		self.c = coupling*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 1))	# Coupling coefficient to model the sSNOM
 		self.O = np.zeros(len(self.k),dtype=complex)						# Near-Field optical response
 
 	def Calculate3PD(self):
@@ -437,112 +444,6 @@ class TMM_sSNOM_Simple(TMM_3PD):
 		self.S3x3[2,2,:] = r
 
 		self.S3x3_update = True
-
-	def GlobalScatteringMatrix(self):
-		if not self.M_update:
-			self.UpdateM()
-
-		if not self.S3x3_update:
-			self.Calculate3PD()	
-
-		I = np.repeat(np.expand_dims(np.repeat(np.expand_dims(np.eye(3,dtype=complex), axis=2), repeats=len(self.k), axis=2), axis=3), repeats=len(self.c), axis=3)
-		M = np.einsum('ijk,jlc->ilkc', self.M22, self.S3x3)  # ij is 3x3 matrix, k span over wavenumbers, c span over coupling coefficients
-		M = (I - M)
-		M = matrix_array_inverse_3x3(M)
-		M = np.einsum('ijkc,jlk->ilkc', M, self.M21)
-		M = np.einsum('ijc,jlkc->ilkc', self.S3x3, M)
-		M = np.einsum('ijk,jlkc->ilkc', self.M12, M)
-		M = np.repeat(np.expand_dims(self.M11, axis=3), repeats=len(self.c), axis=3) + M
-
-		return M
-
-	def NearField(self,Eᴮᴳ,harm):
-		N = 500
-		B = np.abs(self.GlobalScatteringMatrix()[0,0,:,:] + Eᴮᴳ)**2 
-
-		self.O = np.fft.fft(np.tile(B,N), axis = 1)[:,harm*N]
-
-	def Scan(self,sites,resolution,Eᴮᴳ,harm,units = 1e-9):
-		MAP = np.zeros(shape = (1,len(self.k)), dtype = complex)		
-		
-		x = []
-		temp = 0
-		for site in sites:
-			positions = np.arange(resolution,self.structure[site].length,resolution)
-			x = np.concatenate((x,positions + temp))
-			temp = temp + self.structure[site].length
-
-			for position in positions:
-				self.SplitStructure(position,site,units)
-				self.UpdateLR()
-				self.UpdateM()
-				self.NearField(Eᴮᴳ,harm)
-
-				MAP = np.vstack([MAP,self.O])
-
-		MAP = np.delete(MAP, 0, 0)
-
-		return x, np.transpose(MAP)
-
-class TMM_sSNOM_Advanced(TMM_3PD):
-
-	def __init__(self,structure,position,site,units,coupling = 0.1):
-		super().__init__(structure,position,site,units)
-
-		self.coupling = coupling
-		self.c = np.arange(0,2*np.pi,0.2)
-		self.O = np.zeros(len(self.k),dtype=complex)				# Near-Field optical response
-
-	def SplitStructure(self,position,site,units):
-		self.L = TMM(np.concatenate((self.structure[0:site],[inner(self.structure[site].name,self.k,self.structure[site].ϵ,position,units)],[outer_right(self.structure[site].name,self.k,self.structure[site].ϵ)])))
-		self.R = TMM(np.concatenate(([outer_left(self.structure[site].name,self.k,self.structure[site].ϵ)],[inner(self.structure[site].name,self.k,self.structure[site].ϵ, self.structure[site].length - position,units)],self.structure[site+1:len(self.structure)])))
-
-		self.l = (0.01 / self.k)/np.sqrt((np.abs(np.real(self.structure[site].ϵ)) + np.real(self.structure[site].ϵ))/2)
-
-		self.C = ((2*np.pi*(10**2)/self.k)**2)*np.exp(-2*(2*np.pi*(10**2)/self.k)*25e-9)
-		self.C = self.coupling*self.C/max(self.C)
-
-	def Calculate3PD(self):
-		self.S3x3 = np.zeros(shape = (3,3,len(self.c)), dtype = complex)
-
-		t = (1+np.sqrt(1-2*(np.power(self.c,2))))/2
-		r = -(np.power(self.c,2))/(2*t)
-		b = -r-t
-		Co = self.c
-		Ci = self.c
-
-		self.S3x3[0,0,:] = b
-		self.S3x3[0,1,:] = Co
-		self.S3x3[0,2,:] = Co
-		self.S3x3[1,0,:] = Ci
-		self.S3x3[1,1,:] = r
-		self.S3x3[1,2,:] = t
-		self.S3x3[2,0,:] = Ci
-		self.S3x3[2,1,:] = t
-		self.S3x3[2,2,:] = r
-
-		self.S3x3_update = True
-
-	def Calculate_c(self,i):
-		self.c = self.C[i]*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 2)*2*np.pi*60e-9/self.l[i])			# The offset is wrong but we have to take into account the detector frequency cutoff
-
-	def GlobalScatteringMatrix(self):
-		I = np.eye(3,dtype=complex)
-		M = np.zeros(shape = (3,3,len(self.k),len(self.c)), dtype = complex)
-
-		if not self.M_update:
-			self.UpdateM()
-
-		for i in range(len(self.k)):
-			self.Calculate_c(i)
-			self.Calculate3PD()	
-
-			for j in range(len(self.c)):
-				M[:,:,i,j] = np.matmul(np.matmul(self.M12[:,:,i],self.S3x3[:,:,j]),np.matmul(np.linalg.inv(I - np.matmul(self.M22[:,:,i],self.S3x3[:,:,j])),self.M21[:,:,i]))
-
-		M = np.repeat(np.expand_dims(self.M11, axis=3), repeats=len(self.c), axis=3) + M
-
-		return M
 
 	def NearField(self,Eᴮᴳ,harm):
 		N = 500
@@ -571,6 +472,70 @@ class TMM_sSNOM_Advanced(TMM_3PD):
 		MAP = np.delete(MAP, 0, 0)
 
 		return x, np.transpose(MAP)
+
+
+
+class TMM_sSNOM_Simple(TMM_sSNOM):
+	def __init__(self,array_of_sections,position,site,units,coupling = 0.1):
+		super().__init__(array_of_sections,position,site,units,coupling)
+
+		self.c = coupling*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 1))	# Coupling coefficient to model the sSNOM
+
+	def GlobalScatteringMatrix(self):
+		if not self.M_update:
+			self.UpdateM()
+
+		if not self.S3x3_update:
+			self.Calculate3PD()	
+
+		I = np.repeat(np.expand_dims(np.repeat(np.expand_dims(np.eye(3,dtype=complex), axis=2), repeats=len(self.k), axis=2), axis=3), repeats=len(self.c), axis=3)
+		M = np.einsum('ijk,jlc->ilkc', self.M22, self.S3x3)  # ij is 3x3 matrix, k span over wavenumbers, c span over coupling coefficients
+		M = (I - M)
+		M = matrix_array_inverse_3x3(M)
+		M = np.einsum('ijkc,jlk->ilkc', M, self.M21)
+		M = np.einsum('ijc,jlkc->ilkc', self.S3x3, M)
+		M = np.einsum('ijk,jlkc->ilkc', self.M12, M)
+		M = np.repeat(np.expand_dims(self.M11, axis=3), repeats=len(self.c), axis=3) + M
+
+		return M
+
+
+class TMM_sSNOM_Advanced(TMM_sSNOM):
+
+	def __init__(self,array_of_sections,position,site,units,coupling = 0.1):
+		super().__init__(array_of_sections,position,site,units,coupling)
+
+		self.c = None #np.arange(0,2*np.pi,0.2)
+
+	def SplitStructure(self,position,site,units):
+		self.L = TMM(np.concatenate((self.structure[0:site],[inner(self.structure[site].name,self.k,self.structure[site].ϵ,position,units)],[outer_right(self.structure[site].name,self.k,self.structure[site].ϵ)])))
+		self.R = TMM(np.concatenate(([outer_left(self.structure[site].name,self.k,self.structure[site].ϵ)],[inner(self.structure[site].name,self.k,self.structure[site].ϵ, self.structure[site].length - position,units)],self.structure[site+1:len(self.structure)])))
+
+		self.l = (0.01 / self.k)/np.sqrt((np.abs(np.real(self.structure[site].ϵ)) + np.real(self.structure[site].ϵ))/2)
+
+		self.C = ((2*np.pi*(10**2)/self.k)**2)*np.exp(-2*(2*np.pi*(10**2)/self.k)*25e-9)
+		self.C = self.coupling*self.C/max(self.C)
+
+	def Calculate_c(self,i):
+		self.c = self.C[i]*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 2)*2*np.pi*60e-9/self.l[i])			# The offset is wrong but we have to take into account the detector frequency cutoff
+
+	def GlobalScatteringMatrix(self):
+		I = np.eye(3,dtype=complex)
+		M = np.zeros(shape = (3,3,len(self.k),len(self.c)), dtype = complex)
+
+		if not self.M_update:
+			self.UpdateM()
+
+		for i in range(len(self.k)):
+			self.Calculate_c(i)
+			self.Calculate3PD()	
+
+			for j in range(len(self.c)):
+				M[:,:,i,j] = np.matmul(np.matmul(self.M12[:,:,i],self.S3x3[:,:,j]),np.matmul(np.linalg.inv(I - np.matmul(self.M22[:,:,i],self.S3x3[:,:,j])),self.M21[:,:,i]))
+
+		M = np.repeat(np.expand_dims(self.M11, axis=3), repeats=len(self.c), axis=3) + M
+
+		return M
 
 # ------------------------------------------------------------------------------------------------------ #
 #                                    Functions and class description                                     #
@@ -649,10 +614,7 @@ class TMM_sSNOM_Advanced(TMM_3PD):
 # ------------------------------------------------------------------------------------------------------ #
 
 # TO IMPROVE
-# 1. In class TMM_sSNOM_Simple and class TMM_sSNOM_Advanced the functions NearField, Calculate3PD and Scan are the same function, maybe we can implement a class sSNOM
 # 2. Writing the test code with all the functions tested
-# 3. This code works only for effective materials, setup the code for possible integration of EME or if the scattering matrices of the structure are available
-# 4. write down how to do this implementation
 # 6. Fix notation of the functions: all class with caps, all function ecc
 
 # URGENT
@@ -660,13 +622,12 @@ class TMM_sSNOM_Advanced(TMM_3PD):
 # Check calculate_Λ against self.l = (0.01 / self.k)/np.sqrt((np.abs(np.real(self.structure[site].ϵ)) + np.real(self.structure[site].ϵ))/2)
 # Split structure to identify the splittable things
 
-# Around line 622 and 677 "Definition of the polaritonic material (hexagonal boron nitride hBN) [Reference X]" add the number of reference
-# Reference for the class layer EMPossible, all the quantities are calculated at notmal impedence
-
 # update function table
 # check resonances with old code
+# TMM implement periodic conditions
 
 # Definition of chunk: a scattering martix which propagates only!
+# in class TMM change names of variables, it is not clear - ADD A DESCRIPTION OF THE UPDATE - IF IT IS FALSE THE IMPUT CAN BE AN ARRAY OF SCATTERING MATRICES (class ScatteringMatrix).
 
 # ------------------------------------------------------------------------------------------------------ #
 
@@ -677,15 +638,9 @@ if __name__ == '__main__':
 
 	print("Running the test code")
 
-	# Tests for the TMM class, save and load
-	TMM_Effective_Chunk_and_Interfaces = False
-	TMM_Chunk_and_Interfaces = False
-
-	# Tests for the 3PD_TMM class
-	TMM_3PD_Effective_Chunk_and_Interfaces = False
-	TMM_3PD_Chunk_and_Interfaces = False
-
-	temp = True
+	Equivalence = False 				# Test the equivalence of Chunks and Interfaces vs Effective_Chunks and Effective_Interfaces
+	TransferMatrixMethod = False 		# Test the standard TMM implementation with Chunks, Interfaces, Effective_Chunks and Effective_Interfaces (Equivalence test execution needed at least once)
+	TransferMatrixMethod_3PD = True 	# Test the 3PD TMM implementation: Splitting of the structure, GlobalScatteringMatrix γ dependence and scan for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces (Equivalence test execution needed at least once)
 
 	nm = 1e-9							# Units [m]
 	k = np.arange(1400,1580,0.1)		# Wavenumber [1/cm] - 1/λ
@@ -696,137 +651,176 @@ if __name__ == '__main__':
 	isotope = 11 		# hBN isotope
 
 	hBN = hexagonalBoronNitride(isotope,thickness,nm)				# Creation of an instance of hexagonalBoronNitride class
-	A0 = np.real(hBN.ModeEffectivePermittivity(k, 0, [1,1]))		# Calculation of the effective dielectric permittivity ϵ for the mode A0 (Real part is chosen for a lossless system)
-	M1 = np.real(hBN.ModeEffectivePermittivity(k, 1, [1,-10000]))	# Calculation of the effective dielectric permittivity ϵ for the mode M1 (Real part is chosen for a lossless system)
+	A0 = np.real(hBN.ModeEffectivePermittivity(k, 0, [1,1]))		# Calculation of the effective dielectric permittivity ϵ for the mode A0 (Real part is chosen to simulate a lossless system)
+	M1 = np.real(hBN.ModeEffectivePermittivity(k, 1, [1,-10000]))	# Calculation of the effective dielectric permittivity ϵ for the mode M1 (Real part is chosen to simulate a lossless system)
 
-	if TMM_Effective_Chunk_and_Interfaces:
+	if Equivalence:
 
-		# Definition of the system sections
-		LEFT_BOUNDARY = Effective_Interface_Left("M1",k,M1)
-		SPACING = Effective_Chunk("M1",k,M1,100,nm)
-		CAVITY = Effective_Chunk("A0",k,A0,500,nm)
+		# A0_M1 Interface calculation
+		LEFT_BOUNDARY = Effective_Interface_Left("A0",k,A0)
 		RIGHT_BOUNDARY = Effective_Interface_Right("M1",k,M1)
 
-		structure = [LEFT_BOUNDARY,SPACING,CAVITY,SPACING,RIGHT_BOUNDARY]
+		system_A0_M1 = TMM([LEFT_BOUNDARY,RIGHT_BOUNDARY])
+		system_A0_M1.GlobalScatteringMatrix()
+		system_A0_M1.S.save("Test 01 - effective A0_M1 interface scattering matrix.npy")
 
-		# Effective material - TMM
-		system = TMM(structure)
-		system.GlobalScatteringMatrix()
+		# M1_A0 Interface calculation
+		LEFT_BOUNDARY = Effective_Interface_Left("M1",k,M1)
+		RIGHT_BOUNDARY = Effective_Interface_Right("A0",k,A0)
 
-		# Claculation of the Transmission coefficient of the scattering matrix
-		plt.plot(k,abs(system.S.S12))
-		plt.title('Standard transfer matrix frequency response of the structure')
-		plt.ylabel('Scattering element S12')
-		plt.xlabel('Wavenumber, cm⁻¹')
+		system_M1_A0 = TMM([LEFT_BOUNDARY,RIGHT_BOUNDARY])
+		system_M1_A0.GlobalScatteringMatrix()
+		system_M1_A0.S.save("Test 01 - effective M1_A0 interface scattering matrix.npy")
+
+		# A0 Chunk calculation
+		LEFT_BOUNDARY = Effective_Interface_Left("A0",k,A0)
+		CHUNK_A0 = Effective_Chunk("A0",k,A0,300,nm)
+		RIGHT_BOUNDARY = Effective_Interface_Right("A0",k,A0)
+
+		system_A0 = TMM([LEFT_BOUNDARY,CHUNK_A0,RIGHT_BOUNDARY])
+		system_A0.GlobalScatteringMatrix()
+		system_A0.S.save("Test 01 - effective A0 chunk scattering matrix.npy")
+
+		# M1 Chunk calculation
+		LEFT_BOUNDARY = Effective_Interface_Left("M1",k,M1)
+		CHUNK_M1 = Effective_Chunk("M1",k,M1,200,nm)
+		RIGHT_BOUNDARY = Effective_Interface_Right("M1",k,M1)
+
+		system_M1 = TMM([LEFT_BOUNDARY,CHUNK_M1,RIGHT_BOUNDARY])
+		system_M1.GlobalScatteringMatrix()
+		system_M1.S.save("Test 01 - effective M1 chunk scattering matrix.npy")
+
+		# Comparison between Chunk and Effective_Chunk
+		CHUNK_M1 = Chunk("M1",k,M1,200,nm)
+		CHUNK_M1.update()
+
+		# Element S21
+		plt.figure(figsize=(12,6))
+		plt.subplot(121)
+		plt.plot(k,np.real(CHUNK_M1.S.S21),'b')
+		plt.plot(k,np.real(system_M1.S.S21),'r--',dashes=(5, 10))
+		plt.title('Re{S$_{21}$}', size=16)
+		plt.xlabel('Wavenumber, cm⁻¹', size=16)
+		plt.subplot(122)
+		plt.plot(k,np.imag(CHUNK_M1.S.S21),'b')
+		plt.plot(k,np.imag(system_M1.S.S21),'r--',dashes=(5, 10))
+		plt.title('Im{S$_{21}$}', size=16)
+		plt.xlabel('Wavenumber, cm⁻¹', size=16)
 		plt.show()
 
-		# Saving
-		# LEFT_BOUNDARY.S.save("Test 01 - Left boundary scattering matrix.npy")
-		# SPACING.S.save("Test 01 - Spacing scattering matrix.npy")
-		# CAVITY.S.save("Test 01 - Cavity scattering matrix.npy")
-		# RIGHT_BOUNDARY.S.save("Test 01 - Right boundary scattering matrix.npy")
+		# Element S12
+		plt.figure(figsize=(12,6))
+		plt.subplot(121)
+		plt.plot(k,np.real(CHUNK_M1.S.S12),'b')
+		plt.plot(k,np.real(system_M1.S.S12),'r--',dashes=(5, 10))
+		plt.title('Re{S$_{12}$}', size=16)
+		plt.xlabel('Wavenumber, cm⁻¹', size=16)
+		plt.subplot(122)
+		plt.plot(k,np.imag(CHUNK_M1.S.S12),'b')
+		plt.plot(k,np.imag(system_M1.S.S12),'r--',dashes=(5, 10))
+		plt.title('Im{S$_{12}$}', size=16)
+		plt.xlabel('Wavenumber, cm⁻¹', size=16)
+		plt.show()
 
-	if TMM_Chunk_and_Interfaces:
+	if TransferMatrixMethod:
 
-		# Definition of the system sections
-		LEFT_BOUNDARY = Interface("M1",k)
-		SPACING = Chunk("M1",k,M1,100,nm)
-		CAVITY = Chunk("A0",k,A0,200,nm)
-		RIGHT_BOUNDARY = Interface("M1",k)
+		# Effective system
+		LEFT = Effective_Interface_Left("M1",k,M1)
+		SPACING = Effective_Chunk("M1",k,M1,200,nm)
+		CAVITY = Effective_Chunk("A0",k,A0,400,nm)
+		RIGHT = Effective_Interface_Right("M1",k,M1)
+
+		Effective_system = TMM([LEFT,SPACING,CAVITY,SPACING,RIGHT])
+		Effective_system.GlobalScatteringMatrix()
+
+		# Sequence system
+		A0_M1 = Interface("A0_M1",k)
+		M1_A0 = Interface("M1_A0",k)
+		SPACING = Chunk("M1",k,M1,200,nm)
+		CAVITY = Chunk("A0",k,A0,400,nm)
 
 		# Loading
-		LEFT_BOUNDARY.load("Test 01 - Left boundary scattering matrix.npy")
-		SPACING.load("Test 01 - Spacing scattering matrix.npy")
-		CAVITY.load("Test 01 - Cavity scattering matrix.npy")
-		RIGHT_BOUNDARY.load("Test 01 - Right boundary scattering matrix.npy")
+		A0_M1.load("Test 01 - effective A0_M1 interface scattering matrix.npy")
+		M1_A0.load("Test 01 - effective M1_A0 interface scattering matrix.npy")
 
-		structure = [LEFT_BOUNDARY,SPACING,CAVITY,SPACING,RIGHT_BOUNDARY]
+		Sequence_system = TMM([SPACING,M1_A0,CAVITY,A0_M1,SPACING])
+		Sequence_system.GlobalScatteringMatrix()
 
-		# Loaded material - TMM
-		system = TMM(structure)
-		system.GlobalScatteringMatrix()
-
-		# Claculation of the Transmission coefficient of the scattering matrix
-		plt.plot(k,abs(system.S.S12))
-		plt.title('Standard transfer matrix frequency response of the structure')
-		plt.ylabel('Scattering element S12')
-		plt.xlabel('Wavenumber, cm⁻¹')
+		# Comparison - Reflection and Trasmission
+		plt.figure(figsize=(12,6))
+		plt.subplot(121)
+		plt.plot(k,np.abs(Sequence_system.S.S11),'b')
+		plt.plot(k,np.abs(Effective_system.S.S11),'r--',dashes=(5, 10))
+		plt.title('Abs{S$_{11}$}', size=16)
+		plt.xlabel('Wavenumber, cm⁻¹', size=16)
+		plt.subplot(122)
+		plt.plot(k,np.abs(Sequence_system.S.S12),'b')
+		plt.plot(k,np.abs(Effective_system.S.S12),'r--',dashes=(5, 10))
+		plt.title('Abs{S$_{12}$}', size=16)
+		plt.xlabel('Wavenumber, cm⁻¹', size=16)
 		plt.show()
 
-	if temp:
+	if TransferMatrixMethod_3PD:
 
-		# A = Chunk("Chunk",k,A0,200,nm)
-		# B = Interface("Interface",k)
+		position = 200
+		site = 2
+		units = nm
 
-		A = Effective_Interface("Effective_Interface",k,A0)
-		B = Effective_Chunk("Effective_Chunk",k,A0,200,nm)
-		C = Effective_Chunk("Effective_Chunk",k,A0,300,nm)
+		# Effective system
+		LEFT = Effective_Interface_Left("M1",k,M1)
+		SPACING = Effective_Chunk("M1",k,M1,200,nm)
+		CAVITY = Effective_Chunk("A0",k,A0,400,nm)
+		RIGHT = Effective_Interface_Right("M1",k,M1)
 
-		structure = Structure([B])
+		Effective_system = TMM_3PD([LEFT,SPACING,CAVITY,SPACING,RIGHT],position,site,units)
+		Effective_system.UpdateLR()
 
-		position = 50
-		site = 1
-		 
-		L,R = structure.Split(position,site,nm)
+		# Sequence system
+		A0_M1 = Interface("A0_M1",k)
+		M1_A0 = Interface("M1_A0",k)
+		SPACING = Chunk("M1",k,M1,200,nm)
+		CAVITY = Chunk("A0",k,A0,400,nm)
+
+		# Loading
+		A0_M1.load("Test 01 - effective A0_M1 interface scattering matrix.npy")
+		M1_A0.load("Test 01 - effective M1_A0 interface scattering matrix.npy")
+
+		Sequence_system = TMM_3PD([SPACING,M1_A0,CAVITY,A0_M1,SPACING],position,site,units)
+		Sequence_system.UpdateLR()
+
+		# Comparison - L and R
+		plt.figure(figsize=(12,6))
+		plt.subplot(121)
+		plt.plot(k,np.real(Sequence_system.L.S.S12),'b')
+		plt.plot(k,np.real(Effective_system.L.S.S12),'r--',dashes=(5, 10))
+		plt.title('Re{L$_{12}$}', size=16)
+		plt.xlabel('Wavenumber, cm⁻¹', size=16)
+		plt.subplot(122)
+		plt.plot(k,np.imag(Sequence_system.L.S.S12),'b')
+		plt.plot(k,np.imag(Effective_system.L.S.S12),'r--',dashes=(5, 10))
+		plt.title('Im{L$_{12}$}', size=16)
+		plt.xlabel('Wavenumber, cm⁻¹', size=16)
+		plt.show()
+
+		plt.figure(figsize=(12,6))
+		plt.subplot(121)
+		plt.plot(k,np.real(Sequence_system.R.S.S12),'b')
+		plt.plot(k,np.real(Effective_system.R.S.S12),'r--',dashes=(5, 10))
+		plt.title('Re{R$_{12}$}', size=16)
+		plt.xlabel('Wavenumber, cm⁻¹', size=16)
+		plt.subplot(122)
+		plt.plot(k,np.imag(Sequence_system.R.S.S12),'b')
+		plt.plot(k,np.imag(Effective_system.R.S.S12),'r--',dashes=(5, 10))
+		plt.title('Im{R$_{12}$}', size=16)
+		plt.xlabel('Wavenumber, cm⁻¹', size=16)
+		plt.show()
+
+		# 3. 3-PORT DEVICE CLASS
 
 
-# Commit: creation of the Structure class to have a more consiten splitting of the array of , regardless if it is effective or made by a sequence of chunk, interface matrices.
 
+# Commit: 
 
-
-
-	# import plotly.express as px
-	# import PolaritonicEffectiveMaterials as Materials
-
-	# # Constants
-	# nm = 1e-9
-
-	# # Definition of the parameters
-	# dk = 1
-	# k = np.arange(1400,1600,dk)
-
-	# # Definition of the polaritonic materials
-	# thickness = 30   	# hBN thickness [nm]
-	# isotope = 11 		# hBN isotope
-
-	# hBN = Materials.hexagonalBoronNitride(isotope,thickness,nm)
-	# A0 = hBN.ModeEffectivePermittivity(k, 0, [1,1])
-	# M1 = hBN.ModeEffectivePermittivity(k, 1, [1,-10000])
-
-	# # Definition of the system structure
-	# LEFT_BOUNDARY = outer_left("M1",k,M1)
-	# SPACING = inner("M1",k,M1,300,nm)
-	# CAVITY = inner("A0",k,A0,200,nm)
-	# RIGHT_BOUNDARY = outer_right("M1",k,M1)
-
-	# structure = [LEFT_BOUNDARY,SPACING,CAVITY,SPACING,RIGHT_BOUNDARY]
-
-	# # ------------------------- TMM ---------------------- #
-
-	# system = TMM(structure)
-	# system.GlobalScatteringMatrix()
-
-	# #  Claculation of the Transmission coefficient of the scattering matrix
-	# plt.plot(k,abs(system.S.S12))
-	# plt.title('Standard transfer matrix frequency response of the structure')
-	# plt.ylabel('Scattering element S12')
-	# plt.xlabel('Wavenumber, cm⁻¹')
-	# plt.show()
-
-	# # Calculation of the reflection impedance at the boundary of the cavity
-	# position = 0
-	# site = 2
-	# units = nm
-
-	# system_left, system_right = SplitStructure(structure,position,site,units)
-
-	# Z1,_ = system_right.ReflectionImpedance()
-	# _,Z2 = system_left.ReflectionImpedance()
-
-	# plt.plot(k,abs(Z1+Z2))
-	# plt.ylabel('Impedence sum')
-	# plt.xlabel('Wavenumber, cm⁻¹')
-	# plt.show()
 
 	# # ------------------------- TMM 3-port-device ---------------------- #
 
