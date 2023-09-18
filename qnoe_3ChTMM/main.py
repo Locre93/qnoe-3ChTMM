@@ -6,6 +6,85 @@ __author__ = "Lorenzo Orsini"
 __contributors__ = ["Sergi Battle Porro"]
 __references__ = ["https://empossible.net/academics/emp5337/"]
 
+# TO IMPROVE
+# 6. Fix notation of the functions: all class with caps, all function ecc
+
+# URGENT
+# Cross check with old code
+
+# update function table
+# TMM implement periodic conditions
+# better label for the output plots in scan 3PD test and in sSNOM sections
+# Improve readability of the code, more comment and more expanatioon of what is happening
+
+# Definition of chunk: a scattering martix which propagates only!
+# Write description of the code: Aim,Things to imprve in future releases, ecc...
+
+# ----------------------------------------------------------------------------------------------------- #
+#                                    Functions and class description                                    #
+# ----------------------------------------------------------------------------------------------------- #
+
+# def levi_cevita_tensor(dim):							- Functions for fast narray multiplications: Levi Cevita Tensor rules
+# def matrix_array_inverse_3x3(A):						- Functions for fast narray multiplications: Inverse of a 3x3 matrix grouped in a 4-dimensional array: Aij⁻¹ of A[:,:,i,j]
+# def SplitStructure(structure,position,site,units):    - Split a 1-dimensional array of layer objects in two ready to be used as input of TMM class
+
+# class ScatteringMatrix: (k)							- Scattering matrix object subdivided in the four quadrant used in the TMM
+# 	def Redheffer(self,𝐀,𝐁):  								# 𝐂 = 𝐀⊗𝐁 - Update 𝐂 - Redheffer star product
+# 	def Redheffer_left(self,other):  						# 𝐀⊗𝐁 - Update 𝐀 - Redheffer star product
+# 	def Redheffer_right(self,other):  						# 𝐀⊗𝐁 - Update 𝐁 - Redheffer star product
+#	def save(self,FileName)									# Save the scattering matrix to a numpy file (S11,S12,S21,S22)
+#	def load(self,FileName)									# Load the scattering matrix from a numpy file (S11,S12,S21,S22)
+
+# class layer: (name,k,ϵ)								- Layer object which is caracterized by quantities needed to perform TMM
+# 	def calculate_Λ(self):									# Calculate the wavelength of the mode propagating through the layer
+# 	def update(self):										# Update the pre-defined to zeros or ones components of the layer
+
+# 	class inner(layer):	+(length,units)					- Finite size Layer
+# 		def calculate_A(self):								# Method to calculate element A
+# 		def calculate_B(self):								# Method to calculate element B
+# 		def calculate_X(self):								# Method to calculate element X
+# 		def calculate_S(self):								# Method to calculate the scattering matrix of the layer
+
+# 	class outer(layer):	+()								- Semi-infinite Layer
+# 		def calculate_A(self):								# Method to calculate element A
+# 		def calculate_B(self):								# Method to calculate element B
+# 		def calculate_X(self):								# Method to calculate element X
+
+# 		class outer_left(outer): +()					- Left side semi-infinite Layer
+# 			def calculate_S(self):							# Method to calculate the scattering matrix of the layer
+
+# 		class outer_right(outer): +()					- Right side semi-infinite Layer
+# 			def calculate_S(self):							# Method to calculate the scattering matrix of the layer
+
+# class TMM: (structure)								- Scattering type transfer matrix method object that need only the structure of the device 
+# 	def GlobalScatteringMatrix(self):						# Calculate the scattering matrix of the structure, this method will check if the layers have been updated
+# 	def GlobalScatteringCoefficients(self,cp,ccp):			# Calculate the amplitudes of the reflection and transmission fields depending on the input: cp - propagating wave impinging to the structure from left-hand side and ccp - counter propagating wave impinging to the structure from the right-hand side 
+# 	def ReflectionImpedance(self):							# Calculate the reflection impedence of the structure of the left- and right-hand side
+
+# class TMM_3PD(): (structure,position,site,units)		- 3-port-device scattering type transfer matrix method object that need only the structure of the device
+# 	def SplitStructure(self,position,site,units):			# Split the structure at the point of insertion of the 3-port-device
+# 	def UpdateM(self):										# Calculate the M matrix necessary to calculate the global 3x3 scattering matrix
+# 	def UpdateLR(self):										# Calculate the left- and right-hand side global 2x2 transfer matrices
+# 	def Calculate3PD(self,c,γ):								# Calculate the 3-port-device scattering matrix defined with physical simmetries
+# 	def GlobalScatteringMatrix(self,c,γ):					# Calculate the global scattering matrix of the structure with the 3-port-device
+# 	def Scan(self,sites,resolution,units,c,γ):				# Calculate the S11 element of the global scattering matrix at different positions of the 3-port-device within the structure
+
+# 	class TMM_sSNOM_Simple(TMM_3PD): +(coupling)		- subclass of the 3-port-device scattering type transfer matrix method to simulate sSNOM response	
+# 		def Calculate3PD(self):									# Calculate the 3-port-device scattering matrix which model the sSNOM tip interaction
+# 		def GlobalScatteringMatrix(self):						# Calculate the global scattering matrix of the structure with the 3-port-device
+# 		def NearField(self,Eᴮᴳ,harm):							# Calculate the near-field optical responce
+# 		def Scan(self,sites,resolution,Eᴮᴳ,harm,units):			# Calculate the near-field optical responce at different positions of the 3-port-device within the structure
+
+# 	class TMM_sSNOM_Advanced(TMM_3PD): +(coupling)		- subclass of the 3-port-device scattering type transfer matrix method to simulate sSNOM response	
+# 		def Calculate3PD(self):									# Calculate the 3-port-device scattering matrix which model the sSNOM tip interaction	
+# 		def SplitStructure(self,position,site,units):			# Split the structure at the point of insertion of the wavelength-dependent 3-port-device
+#		def Calculate_c(self,i):								# Calculate the wavelength-dependent coupling coefficient
+# 		def GlobalScatteringMatrix(self):						# Calculate the wavelength-dependent the global scattering matrix of the structure with the 3-port-device
+# 		def NearField(self,Eᴮᴳ,harm):							# Calculate the near-field optical responce
+# 		def Scan(self,sites,resolution,Eᴮᴳ,harm,units):			# Calculate the near-field optical responce at different positions of the 3-port-device within the structure
+
+# ----------------------------------------------------------------------------------------------------- #
+
 def levi_cevita_tensor(dim):
     arr=np.zeros(tuple([dim for _ in range(dim)]))
     for x in itertools.permutations(tuple(range(dim))):
@@ -26,7 +105,7 @@ def matrix_array_inverse_3x3(A):
 def DoNothing():
 	pass
 
-# ------------------- CLASS SCATTERING MATRIX ------------------- #
+# -------------------------------------- CLASS SCATTERING MATRIX -------------------------------------- #
 
 class ScatteringMatrix:
 
@@ -82,7 +161,7 @@ class ScatteringMatrix:
 			self.S21 = np.load(File)
 			self.S22 = np.load(File)
 
-# ------------------------ CLASS SECTION ------------------------ #
+# ------------------------------------------- CLASS SECTION ------------------------------------------- #
 
 class Section:
 
@@ -225,19 +304,14 @@ class Effective_Interface_Right(Effective_Interface):
 		self.S.S21 = 2/self.A
 		self.S.S22 = - self.B/self.A
 
-# ----------------------- CLASS STRUCTURE ----------------------- #
+# ------------------------------------------ CLASS STRUCTURE ------------------------------------------ #
 
 class Structure:
 
 	def __init__(self,array_of_sections):
 		self.structure = array_of_sections
 
-	def Split(self,position,site,units):
-
-		k = self.structure[0].k
-		if np.isscalar(k):
-			k = [k]
-
+	def Target(self,site):
 		j = 0
 		target = None
 		for i in range(len(self.structure)):
@@ -246,9 +320,18 @@ class Structure:
 			if site == j:
 				target = i
 				break
-			
+
 		if site > j:
 			raise Exception("In function Structure.Split - the chosen site exceeds the chunks available in the structure.")
+		else:
+			return target
+
+	def Split(self,position,site,units):
+		k = self.structure[0].k
+		if np.isscalar(k):
+			k = [k]
+
+		target = self.Target(site)
 
 		if self.structure[target].length - position <= 0:
 			raise Exception("In function Structure.Split - the chosen position exceeds the chunk lenght.")
@@ -263,9 +346,17 @@ class Structure:
 
 		return L,R
 
-# --------------------- CLASS TMM & TMM_3PD --------------------- #
+	def Sample(self,site,resolution):
+		return np.arange(resolution,self.structure[self.Target(site)].length,resolution)
+
+	def EffectivePermittivity(self,site):
+		return self.structure[self.Target(site)].ϵ
+
+
+# ---------------------------------------- CLASS TMM & TMM_3PD ---------------------------------------- #
 
 class TMM:
+
 	def __init__(self,array_of_sections):
 		self.array_of_sections = array_of_sections
 		self.k = array_of_sections[0].k
@@ -393,7 +484,7 @@ class TMM_3PD():
 		x = []
 		temp = -resolution
 		for site in sites:
-			positions = np.arange(resolution,self.structure[site].length,resolution)
+			positions = self.structure.Sample(site,resolution)
 			x = np.concatenate((x,positions + temp + resolution))
 			temp = np.max(x)
 			for position in positions:
@@ -404,25 +495,19 @@ class TMM_3PD():
 				AUX = self.GlobalScatteringMatrix(c,γ)
 
 				MAP = np.vstack([MAP,AUX[0,0,:,0]])
-				ϵ = np.vstack([ϵ,self.structure[site].ϵ])
+				ϵ = np.vstack([ϵ,self.structure.EffectivePermittivity(site)])
 
 		MAP = np.delete(MAP, 0, 0)
 		ϵ = np.delete(ϵ, 0, 0)
 
 		return x, np.transpose(MAP), np.transpose(ϵ)
 
-
-
-
-
-
-
 class TMM_sSNOM(TMM_3PD):
-	def __init__(self,array_of_sections,position,site,units,coupling = 0.1):
+	def __init__(self,array_of_sections,position,site,units,coupling):
 		super().__init__(array_of_sections,position,site,units)
 
 		self.coupling = coupling
-		self.O = np.zeros(len(self.k),dtype=complex)						# Near-Field optical response
+		self.O = np.zeros(len(self.k),dtype=complex)
 
 	def Calculate3PD(self):
 		self.S3x3 = np.zeros(shape = (3,3,len(self.c)), dtype = complex)
@@ -451,35 +536,10 @@ class TMM_sSNOM(TMM_3PD):
 
 		self.O = np.fft.fft(np.tile(B,N), axis = 1)[:,harm*N]
 
-	def Scan(self,sites,resolution,Eᴮᴳ,harm,units = 1e-9,Coupling = 0.1):
-		MAP = np.zeros(shape = (1,len(self.k)), dtype = complex)		
-		
-		x = []
-		temp = 0
-		for site in sites:
-			positions = np.arange(resolution,self.structure[site].length,resolution)
-			x = np.concatenate((x,positions + temp))
-			temp = temp + self.structure[site].length
-
-			for position in positions:
-				self.SplitStructure(position,site,units)
-				self.UpdateLR()
-				self.UpdateM()
-				self.NearField(Eᴮᴳ,harm)
-
-				MAP = np.vstack([MAP,self.O])
-
-		MAP = np.delete(MAP, 0, 0)
-
-		return x, np.transpose(MAP)
-
-
-
 class TMM_sSNOM_Simple(TMM_sSNOM):
 	def __init__(self,array_of_sections,position,site,units,coupling = 0.1):
 		super().__init__(array_of_sections,position,site,units,coupling)
-
-		self.c = coupling*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 1))	# Coupling coefficient to model the sSNOM
+		self.c = coupling*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 1))
 
 	def GlobalScatteringMatrix(self):
 		if not self.M_update:
@@ -499,25 +559,41 @@ class TMM_sSNOM_Simple(TMM_sSNOM):
 
 		return M
 
+	def Scan(self,sites,resolution,Eᴮᴳ = 0,harm = 4,units = 1e-9):
+		MAP = np.zeros(shape = (1,len(self.k)), dtype = complex)		
+		
+		x = []
+		temp = 0
+		for site in sites:
+			positions = self.structure.Sample(site,resolution)
+			x = np.concatenate((x,positions + temp))
+			temp = np.max(x)
+			for position in positions:
+				self.SplitStructure(position,site,units)
+				self.UpdateLR()
+				self.UpdateM()
+				self.NearField(Eᴮᴳ,harm)
+
+				MAP = np.vstack([MAP,self.O])
+
+		MAP = np.delete(MAP,0,0)
+
+		return x, np.transpose(MAP)
 
 class TMM_sSNOM_Advanced(TMM_sSNOM):
 
-	def __init__(self,array_of_sections,position,site,units,coupling = 0.1):
+	def __init__(self,array_of_sections,position,site,units,coupling = 0.1, tip_radius=25e-9):
 		super().__init__(array_of_sections,position,site,units,coupling)
 
-		self.c = None #np.arange(0,2*np.pi,0.2)
+		self.lp = (0.01 / self.k)/(np.real(np.sqrt(self.structure.EffectivePermittivity(site))))
 
-	def SplitStructure(self,position,site,units):
-		self.L = TMM(np.concatenate((self.structure[0:site],[inner(self.structure[site].name,self.k,self.structure[site].ϵ,position,units)],[outer_right(self.structure[site].name,self.k,self.structure[site].ϵ)])))
-		self.R = TMM(np.concatenate(([outer_left(self.structure[site].name,self.k,self.structure[site].ϵ)],[inner(self.structure[site].name,self.k,self.structure[site].ϵ, self.structure[site].length - position,units)],self.structure[site+1:len(self.structure)])))
+		self.C = ((2*np.pi*(10**2)/self.k)**2)*np.exp(-2*(2*np.pi*(10**2)/self.k)*tip_radius)				# [Reference Y]
+		self.C = self.coupling*self.C/max(self.C)															# Normalization
 
-		self.l = (0.01 / self.k)/np.sqrt((np.abs(np.real(self.structure[site].ϵ)) + np.real(self.structure[site].ϵ))/2)
-
-		self.C = ((2*np.pi*(10**2)/self.k)**2)*np.exp(-2*(2*np.pi*(10**2)/self.k)*25e-9)
-		self.C = self.coupling*self.C/max(self.C)
+		self.Calculate_c(0)														
 
 	def Calculate_c(self,i):
-		self.c = self.C[i]*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 2)*2*np.pi*60e-9/self.l[i])			# The offset is wrong but we have to take into account the detector frequency cutoff
+		self.c = self.C[i]*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 2)*2*np.pi*60e-9/self.lp[i])			# The offset is wrong but we have to take into account the detector frequency cutoff
 
 	def GlobalScatteringMatrix(self):
 		I = np.eye(3,dtype=complex)
@@ -537,112 +613,49 @@ class TMM_sSNOM_Advanced(TMM_sSNOM):
 
 		return M
 
-# ------------------------------------------------------------------------------------------------------ #
-#                                    Functions and class description                                     #
-# ------------------------------------------------------------------------------------------------------ #
+	def Scan(self,sites,resolution,Eᴮᴳ = 0,harm = 4,units = 1e-9):
+		MAP = np.zeros(shape = (1,len(self.k)), dtype = complex)		
+		
+		x = []
+		temp = 0
+		for site in sites:
+			positions = self.structure.Sample(site,resolution)
+			x = np.concatenate((x,positions + temp))
+			temp = np.max(x)
 
-# Notation:
-# The +(variables) written next to some classes mean that it is needed to initialize those extra variables 
-# with respect to the parent class.
+			self.lp = (0.01 / self.k)/(np.real(np.sqrt(self.structure.EffectivePermittivity(site))))
 
-# ------------------------------------------------------------------------------------------------------ #
+			for position in positions:
+				self.SplitStructure(position,site,units)
+				self.UpdateLR()
+				self.UpdateM()
+				self.NearField(Eᴮᴳ,harm)
 
-# def levi_cevita_tensor(dim):							- Functions for fast narray multiplications: Levi Cevita Tensor rules
-# def matrix_array_inverse_3x3(A):						- Functions for fast narray multiplications: Inverse of a 3x3 matrix grouped in a 4-dimensional array: Aij⁻¹ of A[:,:,i,j]
-# def SplitStructure(structure,position,site,units):    - Split a 1-dimensional array of layer objects in two ready to be used as input of TMM class
+				MAP = np.vstack([MAP,self.O])
 
-# class ScatteringMatrix: (k)							- Scattering matrix object subdivided in the four quadrant used in the TMM
-# 	def Redheffer(self,𝐀,𝐁):  								# 𝐂 = 𝐀⊗𝐁 - Update 𝐂 - Redheffer star product
-# 	def Redheffer_left(self,other):  						# 𝐀⊗𝐁 - Update 𝐀 - Redheffer star product
-# 	def Redheffer_right(self,other):  						# 𝐀⊗𝐁 - Update 𝐁 - Redheffer star product
-#	def save(self,FileName)									# Save the scattering matrix to a numpy file (S11,S12,S21,S22)
-#	def load(self,FileName)									# Load the scattering matrix from a numpy file (S11,S12,S21,S22)
+		MAP = np.delete(MAP,0,0)
 
+		return x, np.transpose(MAP)
 
-
-# class layer: (name,k,ϵ)								- Layer object which is caracterized by quantities needed to perform TMM
-# 	def calculate_Λ(self):									# Calculate the wavelength of the mode propagating through the layer
-# 	def update(self):										# Update the pre-defined to zeros or ones components of the layer
-
-# 	class inner(layer):	+(length,units)					- Finite size Layer
-# 		def calculate_A(self):								# Method to calculate element A
-# 		def calculate_B(self):								# Method to calculate element B
-# 		def calculate_X(self):								# Method to calculate element X
-# 		def calculate_S(self):								# Method to calculate the scattering matrix of the layer
-
-# 	class outer(layer):	+()								- Semi-infinite Layer
-# 		def calculate_A(self):								# Method to calculate element A
-# 		def calculate_B(self):								# Method to calculate element B
-# 		def calculate_X(self):								# Method to calculate element X
-
-# 		class outer_left(outer): +()					- Left side semi-infinite Layer
-# 			def calculate_S(self):							# Method to calculate the scattering matrix of the layer
-
-# 		class outer_right(outer): +()					- Right side semi-infinite Layer
-# 			def calculate_S(self):							# Method to calculate the scattering matrix of the layer
-
-
-
-
-# class TMM: (structure)								- Scattering type transfer matrix method object that need only the structure of the device 
-# 	def GlobalScatteringMatrix(self):						# Calculate the scattering matrix of the structure, this method will check if the layers have been updated
-# 	def GlobalScatteringCoefficients(self,cp,ccp):			# Calculate the amplitudes of the reflection and transmission fields depending on the input: cp - propagating wave impinging to the structure from left-hand side and ccp - counter propagating wave impinging to the structure from the right-hand side 
-# 	def ReflectionImpedance(self):							# Calculate the reflection impedence of the structure of the left- and right-hand side
-
-# class TMM_3PD(): (structure,position,site,units)		- 3-port-device scattering type transfer matrix method object that need only the structure of the device
-# 	def SplitStructure(self,position,site,units):			# Split the structure at the point of insertion of the 3-port-device
-# 	def UpdateM(self):										# Calculate the M matrix necessary to calculate the global 3x3 scattering matrix
-# 	def UpdateLR(self):										# Calculate the left- and right-hand side global 2x2 transfer matrices
-# 	def Calculate3PD(self,c,γ):								# Calculate the 3-port-device scattering matrix defined with physical simmetries
-# 	def GlobalScatteringMatrix(self,c,γ):					# Calculate the global scattering matrix of the structure with the 3-port-device
-# 	def Scan(self,sites,resolution,units,c,γ):				# Calculate the S11 element of the global scattering matrix at different positions of the 3-port-device within the structure
-
-# 	class TMM_sSNOM_Simple(TMM_3PD): +(coupling)		- subclass of the 3-port-device scattering type transfer matrix method to simulate sSNOM response	
-# 		def Calculate3PD(self):									# Calculate the 3-port-device scattering matrix which model the sSNOM tip interaction
-# 		def GlobalScatteringMatrix(self):						# Calculate the global scattering matrix of the structure with the 3-port-device
-# 		def NearField(self,Eᴮᴳ,harm):							# Calculate the near-field optical responce
-# 		def Scan(self,sites,resolution,Eᴮᴳ,harm,units):			# Calculate the near-field optical responce at different positions of the 3-port-device within the structure
-
-# 	class TMM_sSNOM_Advanced(TMM_3PD): +(coupling)		- subclass of the 3-port-device scattering type transfer matrix method to simulate sSNOM response	
-# 		def Calculate3PD(self):									# Calculate the 3-port-device scattering matrix which model the sSNOM tip interaction	
-# 		def SplitStructure(self,position,site,units):			# Split the structure at the point of insertion of the wavelength-dependent 3-port-device
-#		def Calculate_c(self,i):								# Calculate the wavelength-dependent coupling coefficient
-# 		def GlobalScatteringMatrix(self):						# Calculate the wavelength-dependent the global scattering matrix of the structure with the 3-port-device
-# 		def NearField(self,Eᴮᴳ,harm):							# Calculate the near-field optical responce
-# 		def Scan(self,sites,resolution,Eᴮᴳ,harm,units):			# Calculate the near-field optical responce at different positions of the 3-port-device within the structure
-
-# ------------------------------------------------------------------------------------------------------ #
-
-# TO IMPROVE
-# 2. Writing the test code with all the functions tested
-# 6. Fix notation of the functions: all class with caps, all function ecc
-
-# URGENT
-# Test the modified functions!
-# Check calculate_Λ against self.l = (0.01 / self.k)/np.sqrt((np.abs(np.real(self.structure[site].ϵ)) + np.real(self.structure[site].ϵ))/2)
-# Maybe need re-organize the Split fuction and class Structure (a bit redundant)
-
-# update function table
-# check resonances with old code
-# TMM implement periodic conditions
-
-# Definition of chunk: a scattering martix which propagates only!
-# in class TMM change names of variables, it is not clear - ADD A DESCRIPTION OF THE UPDATE - IF IT IS FALSE THE IMPUT CAN BE AN ARRAY OF SCATTERING MATRICES (class ScatteringMatrix).
-
-# ------------------------------------------------------------------------------------------------------ #
+# --------------------------------------------- TEST CODE --------------------------------------------- #
 
 if __name__ == '__main__':
 
 	import matplotlib.pyplot as plt
 	from materials import *
 
-	print("Running the test code:")
-
-	Equivalence = False 				# Test the equivalence of Chunks and Interfaces vs Effective_Chunks and Effective_Interfaces
-	TransferMatrixMethod = False 		# Test the standard TMM implementation with Chunks, Interfaces, Effective_Chunks and Effective_Interfaces (Equivalence test execution needed at least once)
-	TransferMatrixMethod_3PD = True 	# Test the 3PD TMM implementation: Splitting of the structure, GlobalScatteringMatrix γ dependence and scan for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces (Equivalence test execution needed at least once)
-	GlobalScatteringMatrix_3PD = True
-	Splitting = False
+	Equivalence = False 							# Test the equivalence of Chunks and Interfaces vs Effective_Chunks and Effective_Interfaces
+	TransferMatrixMethod = False 					# Test the standard TMM implementation with Chunks, Interfaces, Effective_Chunks and Effective_Interfaces (Equivalence test execution needed at least once)
+	TransferMatrixMethod_3PD = False 				# Test the 3PD TMM implementation: (Equivalence test execution needed at least once)
+	GlobalScatteringMatrix_3PD = False					# GlobalScatteringMatrix c and γ dependence
+	Splitting = False									# Splitting of the structure
+	Scan_3PD = False									# Scan for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
+	TransferMatrixMethod_sSNOM_Simple = False 		# Test the sSNOM TMM simple implementation: (Equivalence test execution needed at least once)
+	Scan_sSNOM_Simple = False 							# Scan 		- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
+	Spectrum_sSNOM_Simple = False 						# Spectrum 	- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
+	TransferMatrixMethod_sSNOM_Advanced = False  	# Test the sSNOM TMM advanced implementation: (Equivalence test execution needed at least once)
+	Scan_sSNOM_Advanced = False 						# Scan 		- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
+	Spectrum_sSNOM_Advanced = False 					# Spectrum 	- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
 
 	nm = 1e-9							# Units [m]
 	k = np.arange(1400,1580,0.1)		# Wavenumber [1/cm] - 1/λ
@@ -834,9 +847,8 @@ if __name__ == '__main__':
 			Sequence_SG_3PD = Sequence_system_TMM_3PD.GlobalScatteringMatrix(c=c,γ=0)
 
 			plt.figure(figsize=(12,6))
-			plt.title('Transmission through the right near-field channel', size=16)
 
-			plt.subplot(121)
+			plt.subplot(1,2,1)
 			plt.plot(k,np.abs(Effective_system_TMM.S.S12),'b')
 			plt.plot(k,np.abs(Effective_SG_3PD[2,1,:,0]),'r--',dashes=(5, 10))					# No coupling between the far-field and near-field channels (c = 0)
 			plt.plot(k,np.abs(Effective_SG_3PD[2,1,:,1]),'g--',dashes=(5, 2))					# Weak coupling between the far-field and near-field channels (c = 0.2)
@@ -844,7 +856,7 @@ if __name__ == '__main__':
 			plt.title('Effective', size=16)
 			plt.xlabel('Wavenumber, cm⁻¹', size=16)
 
-			plt.subplot(122)
+			plt.subplot(1,2,2)
 			plt.plot(k,np.abs(Sequence_system_TMM.S.S12),'b')
 			plt.plot(k,np.abs(Sequence_SG_3PD[2,1,:,0]),'r--',dashes=(5, 10))					# No coupling between the far-field and near-field channels (c = 0)
 			plt.plot(k,np.abs(Sequence_SG_3PD[2,1,:,1]),'g--',dashes=(5, 2))					# Weak coupling between the far-field and near-field channels (c = 0.2)
@@ -854,110 +866,169 @@ if __name__ == '__main__':
 			plt.show()
 
 			# Test at different phase coefficient
-			c = 0.1
-			
-
 			plt.figure(figsize=(12,6))
-			S31 = []
+
+			S13 = []
 			for γ in np.arange(0,2*np.pi,0.1):
 
 				Effective_system_TMM_3PD.S3x3_update = False
 				Effective_SG_3PD = Effective_system_TMM_3PD.GlobalScatteringMatrix(c = 0.1,γ = γ)
 
-				S31 = np.append(S31,Effective_system_TMM_3PD.S3x3[2,0,:])
+				S13 = np.append(S13,Effective_system_TMM_3PD.S3x3[0,2,:])
 
-				plt.subplot(121)
+				plt.subplot(1,2,1)
 				plt.plot(k,np.abs(Effective_SG_3PD[2,1,:]))
-
 			
-			plt.subplot(121)
+			plt.subplot(1,2,1)
 			plt.title('Transmission through the right near-field channel', size=16)
 
-			plt.subplot(122)
+			plt.subplot(1,2,2)
 			plt.title('3-port device coupling phase', size=16)
-			plt.plot(np.angle(S31))
+			plt.plot(np.angle(S13))
 			plt.show()
 
-# Commit:
+		if Scan_3PD:
+			sites = [1,2,3]
+			resolution = 10
 
+			x,MAP,PERM = Effective_system_TMM_3PD.Scan(sites=sites,resolution=resolution)
+			X,K = np.meshgrid(x,k)
 
-	# # ------------------------- TMM 3-port-device ---------------------- #
+			plt.figure(figsize=(12,6))
 
-	# c = [0.01,0.1,0.2,0.3,0.5,0.7]
-	# site = 2
-	# position = 100
-	# units = nm
+			plt.subplot(1,2,1)
+			plt.contourf(X,K,np.abs(MAP),100)
 
-	# system_3PD = TMM_3PD(structure,position,site,units)
+			plt.subplot(1,2,2)
+			plt.contourf(X,K,np.real(PERM),100)
+			plt.show()
 
-	# # Global scattering matrix at different coupling sterngth
-	# M = system_3PD.GlobalScatteringMatrix(c,0)
+			x,MAP,PERM = Sequence_system_TMM_3PD.Scan(sites=sites,resolution=resolution)
+			X,K = np.meshgrid(x,k)
 
-	# plt.plot(k,abs(M[0,0,:,0]))
-	# plt.plot(k,abs(M[0,0,:,1]))
-	# plt.plot(k,abs(M[0,0,:,2]))
-	# plt.plot(k,abs(M[0,0,:,3]))
-	# plt.plot(k,abs(M[0,0,:,4]))
-	# plt.plot(k,abs(M[0,0,:,5]))
-	# plt.title('Response from the center of the cavity')
-	# plt.xlabel('Wavenumber, cm⁻¹')
-	# plt.ylabel('Reflected electric field, a.u.')
-	# plt.show()
+			plt.figure(figsize=(12,6))
 
-	# # 2D Scan of the structure
-	# sites = [1,2,3]
-	# x, Map, ϵ = system_3PD.Scan(sites,1)
+			plt.subplot(1,2,1)
+			plt.contourf(X,K,np.abs(MAP),100)
 
-	# X,K = np.meshgrid(x,k)
+			plt.subplot(1,2,2)
+			plt.contourf(X,K,np.real(PERM),100)
+			plt.show()
 
-	# plt.contourf(X,K,abs(Map), 30)
-	# plt.title('Spatial and frequency response of the structure')
-	# plt.xlabel('Position, nm')
-	# plt.ylabel('Wavenumber, cm⁻¹')
-	# plt.show()
+	if TransferMatrixMethod_sSNOM_Simple:
 
-	# plt.contourf(X,K,abs(ϵ), 30)
-	# plt.title('Spatial and frequency response of the structure')
-	# plt.xlabel('Position, nm')
-	# plt.ylabel('Wavenumber, cm⁻¹')
-	# plt.show()
+		position = 200
+		site = 2
+		units = nm
 
-	# # ------------------------- TMM sSNOM ---------------------- #
+		# Effective system
+		LEFT = Effective_Interface_Left("M1",k,M1)
+		SPACING = Effective_Chunk("M1",k,M1,200,nm)
+		CAVITY = Effective_Chunk("A0",k,A0,400,nm)
+		RIGHT = Effective_Interface_Right("M1",k,M1)
 
-	# site = 2
-	# position = 100
-	# units = nm
+		Effective_system_TMM_sSNOM_Simple = TMM_sSNOM_Simple([LEFT,SPACING,CAVITY,SPACING,RIGHT],position,site,units)
 
-	# Eᴮᴳ = 0
-	# harm = 4
+		# Sequence system
+		A0_M1 = Interface("A0_M1",k)
+		M1_A0 = Interface("M1_A0",k)
+		SPACING = Chunk("M1",k,M1,200,nm)
+		CAVITY = Chunk("A0",k,A0,400,nm)
 
-	# system_sSNOM = TMM_sSNOM(structure,position,site,units)
-	# system_sSNOM.NearField(Eᴮᴳ,harm)
+		# Loading
+		A0_M1.load("Test 01 - effective A0_M1 interface scattering matrix.npy")
+		M1_A0.load("Test 01 - effective M1_A0 interface scattering matrix.npy")
 
-	# plt.plot(k,np.abs(system_sSNOM.O))
-	# plt.title('Near-field response from the center of the cavity')
-	# plt.xlabel('Wavenumber, cm⁻¹')
-	# plt.ylabel('O4 amplitude, a.u.')
-	# plt.show()
+		Sequence_system_TMM_sSNOM_Simple = TMM_sSNOM_Simple([SPACING,M1_A0,CAVITY,A0_M1,SPACING],position,site,units)
 
-	# sites = [1,2,3]
-	# x, Map = system_sSNOM.Scan(sites,10,Eᴮᴳ,harm)
+		if Spectrum_sSNOM_Simple:
 
-	# X,K = np.meshgrid(x,k)
+			Eᴮᴳ = 0
+			harm = 4
 
-	# plt.contourf(X,K,abs(Map), 30)
-	# plt.title('Near-field spatial and frequency response of the structure')
-	# plt.xlabel('Position, nm')
-	# plt.ylabel('Wavenumber, cm⁻¹')
-	# plt.show()
+			Effective_system_TMM_sSNOM_Simple.NearField(Eᴮᴳ=Eᴮᴳ,harm=harm)
+			Sequence_system_TMM_sSNOM_Simple.NearField(Eᴮᴳ=Eᴮᴳ,harm=harm)
 
-	# # Wavelength-dependent coupling coefficient
+			plt.plot(k,np.abs(Effective_system_TMM_sSNOM_Simple.O))
+			plt.plot(k,np.abs(Sequence_system_TMM_sSNOM_Simple.O),'r--',dashes=(5, 10))
+			plt.show()
 
-	# x, Map = system_sSNOM.Scan_loop(sites,10,Eᴮᴳ,harm)
-	# X,K = np.meshgrid(x,k)
+		if Scan_sSNOM_Simple:
 
-	# plt.contourf(X,K,abs(Map), 30)
-	# plt.title('Near-field spatial and frequency response of the structure - LOOP')
-	# plt.xlabel('Position, nm')
-	# plt.ylabel('Wavenumber, cm⁻¹')
-	# plt.show()
+			sites = [1,2,3]
+			resolution = 10
+
+			x,MAP = Effective_system_TMM_sSNOM_Simple.Scan(sites=sites,resolution=resolution)
+			X,K = np.meshgrid(x,k)
+
+			plt.figure(figsize=(12,6))
+
+			plt.subplot(1,2,1)
+			plt.contourf(X,K,np.abs(MAP),100)
+
+			x,MAP = Sequence_system_TMM_sSNOM_Simple.Scan(sites=sites,resolution=resolution)
+			X,K = np.meshgrid(x,k)
+
+			plt.subplot(1,2,2)
+			plt.contourf(X,K,np.abs(MAP),100)
+			plt.show()
+
+	if TransferMatrixMethod_sSNOM_Advanced:
+
+		position = 200
+		site = 2
+		units = nm
+
+		# Effective system
+		LEFT = Effective_Interface_Left("M1",k,M1)
+		SPACING = Effective_Chunk("M1",k,M1,200,nm)
+		CAVITY = Effective_Chunk("A0",k,A0,400,nm)
+		RIGHT = Effective_Interface_Right("M1",k,M1)
+
+		Effective_system_TMM_sSNOM_Advanced = TMM_sSNOM_Advanced([LEFT,SPACING,CAVITY,SPACING,RIGHT],position,site,units)
+
+		# Sequence system
+		A0_M1 = Interface("A0_M1",k)
+		M1_A0 = Interface("M1_A0",k)
+		SPACING = Chunk("M1",k,M1,200,nm)
+		CAVITY = Chunk("A0",k,A0,400,nm)
+
+		# Loading
+		A0_M1.load("Test 01 - effective A0_M1 interface scattering matrix.npy")
+		M1_A0.load("Test 01 - effective M1_A0 interface scattering matrix.npy")
+
+		Sequence_system_TMM_sSNOM_Advanced = TMM_sSNOM_Advanced([SPACING,M1_A0,CAVITY,A0_M1,SPACING],position,site,units)
+
+		if Spectrum_sSNOM_Advanced:
+
+			Eᴮᴳ = 0
+			harm = 4
+
+			Effective_system_TMM_sSNOM_Advanced.NearField(Eᴮᴳ=Eᴮᴳ,harm=harm)
+			Sequence_system_TMM_sSNOM_Advanced.NearField(Eᴮᴳ=Eᴮᴳ,harm=harm)
+
+			plt.plot(k,np.abs(Effective_system_TMM_sSNOM_Advanced.O))
+			plt.plot(k,np.abs(Sequence_system_TMM_sSNOM_Advanced.O),'r--',dashes=(5, 10))
+			plt.show()
+
+		if Scan_sSNOM_Advanced:
+
+			sites = [1,2,3]
+			resolution = 10
+
+			x,MAP = Effective_system_TMM_sSNOM_Advanced.Scan(sites=sites,resolution=resolution)
+			X,K = np.meshgrid(x,k)
+
+			plt.figure(figsize=(12,6))
+
+			plt.subplot(1,2,1)
+			plt.contourf(X,K,np.abs(MAP),100)
+
+			x,MAP = Sequence_system_TMM_sSNOM_Advanced.Scan(sites=sites,resolution=resolution)
+			X,K = np.meshgrid(x,k)
+
+			plt.subplot(1,2,2)
+			plt.contourf(X,K,np.abs(MAP),100)
+			plt.show()
+
+# Commit: 
