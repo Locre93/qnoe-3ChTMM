@@ -1,3 +1,4 @@
+from tqdm import tqdm
 import numpy as np
 import itertools
 
@@ -7,18 +8,20 @@ __contributors__ = ["Sergi Battle Porro"]
 __references__ = ["https://empossible.net/academics/emp5337/"]
 
 # TO IMPROVE
-# 6. Fix notation of the functions: all class with caps, all function ecc
+# Write description of the code: Aim,Things to imprve in future releases, ecc...
+# Definition of chunk: a scattering martix which propagates only!
+# Fix notation of the functions: all class with caps, all function ecc
+# Missing description of the inputs k [cm-1] exc... # Wavenumber [1/cm] - 1/λ
+# update function table
+# Test code plots generation, better description, labels and purpose
 
 # URGENT
 # Cross check with old code
+# Add detector response
 
-# update function table
+# EXTRA
 # TMM implement periodic conditions
 # better label for the output plots in scan 3PD test and in sSNOM sections
-# Improve readability of the code, more comment and more expanatioon of what is happening
-
-# Definition of chunk: a scattering martix which propagates only!
-# Write description of the code: Aim,Things to imprve in future releases, ecc...
 
 # ----------------------------------------------------------------------------------------------------- #
 #                                    Functions and class description                                    #
@@ -212,6 +215,9 @@ class Interface(Section):
 		super().__init__(name,k)
 
 		self.splittable = False
+
+	def set(self,S):
+		self.S = S
 
 class Effective_Chunk(Chunk):
 
@@ -483,7 +489,7 @@ class TMM_3PD():
 		
 		x = []
 		temp = -resolution
-		for site in sites:
+		for site in tqdm(sites):
 			positions = self.structure.Sample(site,resolution)
 			x = np.concatenate((x,positions + temp + resolution))
 			temp = np.max(x)
@@ -503,6 +509,7 @@ class TMM_3PD():
 		return x, np.transpose(MAP), np.transpose(ϵ)
 
 class TMM_sSNOM(TMM_3PD):
+
 	def __init__(self,array_of_sections,position,site,units,coupling):
 		super().__init__(array_of_sections,position,site,units)
 
@@ -537,6 +544,7 @@ class TMM_sSNOM(TMM_3PD):
 		self.O = np.fft.fft(np.tile(B,N), axis = 1)[:,harm*N]
 
 class TMM_sSNOM_Simple(TMM_sSNOM):
+
 	def __init__(self,array_of_sections,position,site,units,coupling = 0.1):
 		super().__init__(array_of_sections,position,site,units,coupling)
 		self.c = coupling*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 1))
@@ -564,7 +572,7 @@ class TMM_sSNOM_Simple(TMM_sSNOM):
 		
 		x = []
 		temp = 0
-		for site in sites:
+		for site in tqdm(sites):
 			positions = self.structure.Sample(site,resolution)
 			x = np.concatenate((x,positions + temp))
 			temp = np.max(x)
@@ -618,7 +626,7 @@ class TMM_sSNOM_Advanced(TMM_sSNOM):
 		
 		x = []
 		temp = 0
-		for site in sites:
+		for site in tqdm(sites):
 			positions = self.structure.Sample(site,resolution)
 			x = np.concatenate((x,positions + temp))
 			temp = np.max(x)
@@ -658,7 +666,7 @@ if __name__ == '__main__':
 	Spectrum_sSNOM_Advanced = False 					# Spectrum 	- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
 
 	nm = 1e-9							# Units [m]
-	k = np.arange(1400,1580,0.1)		# Wavenumber [1/cm] - 1/λ
+	k = np.arange(1400,1580,0.5)		# Wavenumber [1/cm] - 1/λ
 
 	# From material.py:
 	# Definition of the polaritonic material (hexagonal boron nitride hBN) [Reference X]
@@ -1030,5 +1038,3 @@ if __name__ == '__main__':
 			plt.subplot(1,2,2)
 			plt.contourf(X,K,np.abs(MAP),100)
 			plt.show()
-
-# Commit: 

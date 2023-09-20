@@ -4,8 +4,41 @@ __version__ = "1.0.0"
 __author__ = "Lorenzo Orsini"
 __contributors__ = ["Matteo Ceccanti"]
 
+# Quasi-static limit q >> omega*epsion/c
+# In FermiEnergy(n): charge carrier density cm-2 
+# Create function table
+# Comment and refine test code
+
+# Graphene reference: An introduction to graphene plasmonics
+
+# ----------------------------------------------------------------------------------------------------- #
+#                                    Functions and class description                                    #
+# ----------------------------------------------------------------------------------------------------- #
+
+# ----------------------------------------------------------------------------------------------------- #
+
+def ReflectingInterface(k,ϕ):
+	S = ScatteringMatrix(k)
+
+	dim = len(k)
+
+	S.S12 = np.zeros(dim,dtype=complex)
+	S.S21 = np.zeros(dim,dtype=complex)
+	S.S11 = np.ones(dim,dtype=complex)*np.exp(1j*ϕ)
+	S.S22 = np.ones(dim,dtype=complex)*np.exp(1j*ϕ)
+
+	return S
+
+def FermiEnergy(n):
+	e = 1.60217663e-19		# Elemntary charge [C]
+	ħ = 6.582119569e-16		# Planck constant [eV⋅s] 
+	c = 299792458			# Speed of light [m/s]
+	vf = c/300				# Fermi velocity [m/s]
+
+	return ħ*vf*100*np.sqrt(np.pi*n)	# Fermi Energy [eV]
+
 class hexagonalBoronNitride:
-	def __init__(self, isotope, thickness,units):
+	def __init__(self,isotope,thickness,units):
 		self.isotope = isotope 
 		self.thickness = thickness * units
 
@@ -60,10 +93,7 @@ class hexagonalBoronNitride:
 		return Q
 
 	def ModeEffectivePermittivity(self, k, n, ϵ):
-
-		ϵ_eff = ((0.01/k)*self.ModeWavevector(k, n, ϵ)/(2*np.pi))**2
-
-		return ϵ_eff
+		return ((0.01/k)*self.ModeWavevector(k, n, ϵ)/(2*np.pi))**2
 
 	def ModeEffectiveRefractionIndex(self, k, n, ϵ):
 
@@ -102,114 +132,103 @@ class hexagonalBoronNitride:
 
 		return Ex, By, Ez
 
+class Graphene:
+
+	def __init__(self):
+		pass
+
+	def ModeWavevector(self,k,Ef,ϵ,Γ=0.0037):
+		α = 0.0072973525693		# Fine-structure constant
+		ħ = 6.582119569e-16		# Planck constant [eV⋅s]
+		c = 299792458			# Speed of light [m/s]
+
+		ϵ = (ϵ[0]+ϵ[1])/2 			# Permittivity average
+		Eph = (2*np.pi*ħ*c*k*1e2)	# Photon energy [eV]
+
+		Q = ϵ/(2*α*c*ħ)*(Eph/Ef)*(Eph+1j*Γ)
+
+		return Q				# Graphene plasmon wavevector [1/m]
+
+	def ModeEffectivePermittivity(self,k,Ef,ϵ,Γ=0.0037):
+		return ((0.01/k)*self.ModeWavevector(k,Ef,ϵ,Γ)/(2*np.pi))**2
+
 if __name__ == '__main__':
-	pass
 
-	# from matplotlib import rcParams 
-	# import matplotlib.pyplot as plt
-	# plt.rcParams['font.family'] = ['sans-serif']
+	import matplotlib.pyplot as plt
 
-	# nm = 1e-9
+	# --------------------------- GRAPHENE --------------------------- #
 
-	# thickness = 10      # hBN thickness [nm]
-	# isotope = 11 		# hBN isotope
-	# mode = 0 			# hBN mode
+	Sheet = Graphene()
 
-	# dz = 0.01     		# Vertical resolution [nm]
-	# dk = 1 				# Wavenumber resolution [cm⁻¹]
-	# ϵ = [1,1]		# Dielectric permittivities of the environment [Above,Below]
+	n = np.arange(1e11,1e13,1e10)	# Charge carrier density [1/cm²]
+	plt.plot(n,FermiEnergy(n))
+	plt.show()
 
-	# layer = hexagonalBoronNitride(isotope,thickness,nm)
-	# Ex,By,Ez = layer.ModeProfile(1500, mode, ϵ)
+	Ef = 0.3		# Fermi energy [eV]
+	k = 333			# Wavenumber [1/cm] - 1/λ (10THz)
+	ϵ = [4,4]		# Dielectric permittivities of the environment [Above,Below]
 
-	# # z = np.arange(-10*thickness,10*thickness,dz)*nm
-	# # plt.plot(z/nm, np.abs(Ex(z)))
-	# # plt.ylabel('Field inteity, a.u.')
-	# # plt.xlabel('Z, nm')
-	# # plt.show()
+	Q = Sheet.ModeWavevector(k,Ef,ϵ)
+	ϵ_eff = Sheet.ModeEffectivePermittivity(k,Ef,ϵ)
 
-	# k = np.arange(1400,1600,dk)
-	# # q = layer.ModeWavevector(k, 0, [1,1])
-	# # plt.plot(np.real(q),k)
-	# # plt.ylabel('Wavenumber, cm⁻¹')
-	# # plt.xlabel('Mode momentum, m⁻¹')
-	# # # plt.show()
+	λp = 2*np.pi/np.real(Q)
+	λ = 0.01/k
 
-	# # k = np.arange(1400,1600,dk)
-	# # q = layer.ModeWavevector(k, 1, [1,-1000])
-	# # plt.plot(np.real(q),k)
-	# # plt.ylabel('Wavenumber, cm⁻¹')
-	# # plt.xlabel('Mode momentum, m⁻¹')
-	# # plt.show()
+	print(λp/λ)
+	print(np.sqrt(1/n))
 
-	# phi,pho,_ = layer.ModeCoefficients(k, [1,1])
-	# plt.plot(k,np.abs(pho))
-	# plt.ylabel('Wavenumber, cm⁻¹')
-	# plt.xlabel('Mode momentum, m⁻¹')
+	# -------------------- HEXAGONAL BORON NITRIDE -------------------- #
+
+	nm = 1e-9
+
+	thickness = 10     	# hBN thickness [nm]
+	isotope = 11 		# hBN isotope
+	mode = 0 			# hBN mode
+
+	dz = 0.01     	# Vertical resolution [nm]
+	dk = 1 			# Wavenumber resolution [cm⁻¹]
+	ϵ = [1,1]		# Dielectric permittivities of the environment [Above,Below]
+
+	layer = hexagonalBoronNitride(isotope,thickness,nm)
+	Ex,By,Ez = layer.ModeProfile(1500, mode, ϵ)
+
+	z = np.arange(-10*thickness,10*thickness,dz)*nm
+	plt.plot(z/nm, np.abs(Ex(z)))
+	plt.ylabel('Field inteity, a.u.')
+	plt.xlabel('Z, nm')
+	plt.show()
+
+	k = np.arange(1400,1600,dk)
+	q = layer.ModeWavevector(k, 0, [1,1])
+	plt.plot(np.real(q),k)
+	plt.ylabel('Wavenumber, cm⁻¹')
+	plt.xlabel('Mode momentum, m⁻¹')
 	# plt.show()
 
+	k = np.arange(1400,1600,dk)
+	q = layer.ModeWavevector(k, 1, [1,-1000])
+	plt.plot(np.real(q),k)
+	plt.ylabel('Wavenumber, cm⁻¹')
+	plt.xlabel('Mode momentum, m⁻¹')
+	plt.show()
 
-	# n = layer.ModeEffectiveRefractionIndex(k, mode, ϵ)
-	# plt.plot(np.real(n),k)
-	# plt.ylabel('Wavenumber, cm⁻¹')
-	# plt.xlabel('Mode effective refractive index - real part')
-	# plt.show()
+	phi,pho,_ = layer.ModeCoefficients(k, [1,1])
+	plt.plot(k,np.abs(pho))
+	plt.ylabel('Wavenumber, cm⁻¹')
+	plt.xlabel('Mode momentum, m⁻¹')
+	plt.show()
 
-	# plt.plot(np.imag(n),k)
-	# plt.ylabel('Wavenumber, cm⁻¹')
-	# plt.xlabel('Mode effective refractive index - imaginary part')
-	# plt.show()
+	n = layer.ModeEffectiveRefractionIndex(k, mode, ϵ)
+	plt.plot(np.real(n),k)
+	plt.ylabel('Wavenumber, cm⁻¹')
+	plt.xlabel('Mode effective refractive index - real part')
+	plt.show()
 
-
-
-	# # PolariotnicEffectiveMaterials V1.0.1:
-
-	# k = 1500
-	# # q = layer.ModeWavevector(k, mode, ϵ)
-
-
-	# ϵ_xy = layer.DielectricPermittivity(k)[0]
-	# ϵ_z = layer.DielectricPermittivity(k)[2]
-
-	# ϵ = [1,1]			
-
-	# ϕ,_,_ = layer.ModeCoefficients(k,ϵ)
-
-	# qd = np.arange(0.001,10,0.001)
-
-	# R_AM = (ϵ_xy*(1-np.exp(-2*qd))/(1+np.exp(-2*qd)) - 1j*ϵ[0]*ϕ)/(ϵ_xy*(1-np.exp(-2*qd))/(1+np.exp(-2*qd)) + 1j*ϵ[0]*ϕ)
-	# R_A = (ϵ_xy - 1j*ϵ[0]*ϕ)/(ϵ_xy + 1j*ϵ[0]*ϕ)*np.ones(np.size(R_AM))
-
-	# plt.plot(qd,np.angle(R_AM))
-	# plt.plot(qd,np.angle(R_A))
-	# plt.show()
+	plt.plot(np.imag(n),k)
+	plt.ylabel('Wavenumber, cm⁻¹')
+	plt.xlabel('Mode effective refractive index - imaginary part')
+	plt.show()
 
 
 
 
-
-
-	# def Mode_AM_Coefficients(self, k, ϵ):
-
-	# 	ϵ_xy = self.DielectricPermittivity(k)[0]
-	# 	ϵ_z = self.DielectricPermittivity(k)[2]
-
-	# 	dR = (1-np.exp(2*q*d))/(1+np.exp(-2*q*d))
-
-	# 	ϕ = np.sqrt(-ϵ_xy/ϵ_z)
-	# 	R = [(ϵ_xy - 1j*ϵ[0]*ϕ)/(ϵ_xy + 1j*ϵ[0]*ϕ),(ϵ_xy - 1j*ϵ[1]*ϕ)/(ϵ_xy + 1j*ϵ[1]*ϕ)]
-	# 	ρ = (1/np.pi)*(np.angle(R[0]) + np.angle(R[1]))
-
-	# 	return ϕ,ρ,R
-
-	# def Mode_AM_Wavevector(self, k, n, ϵ):
-
-	# 	ϵ_xy = self.DielectricPermittivity(k)[0]
-	# 	ϵ_z = self.DielectricPermittivity(k)[2]
-
-	# 	ϕ,ρ,R = self.ModeCoefficients(k,ϵ)
-
-	# 	K = (np.pi/(2*self.thickness))*(ρ + 2*n) - (1j/(2*self.thickness))*np.log(np.abs(R[0])*np.abs(R[1]))
-	# 	Q = ((np.real(K)*np.real(ϕ) + np.imag(K)*np.imag(ϕ)) + 1j*(-np.real(K)*np.imag(ϕ) + np.imag(K)*np.real(ϕ)))/(np.abs(ϕ)**2)
-
-	# 	return Q
