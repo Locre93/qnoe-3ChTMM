@@ -10,17 +10,16 @@ __references__ = ["https://empossible.net/academics/emp5337/"]
 # The variable k is the light wavenumber (1/λ) in cm⁻¹
 
 # TO IMPROVE
-# Test code: plots generation and labels
 # Add functionality: load and save also the k vector
-# Plot of the near field response at the detector (oscilloscope)
 
 # URGENT
-# Cross-check with old version of the code
-# Add detector cut-off
-# Grammar check
+# Cross-check: Compatible with the results given by the old version of the code?
+# Functionality: Add detector cut-off
+# Functionality: Add tapping amplitude and offset
+# Quality: Grammar check
 
 # TO DO
-# 1. Improve the style of the code - methods starting with capital letters, remove the underscores ext...
+# 1. Improve the style of the code - methods starting with capital letters and other formatting standard
 # 2. Implement periodic boundary conditions in the TMM class
 # 3. Implement multimodal scattering matrices
 
@@ -517,6 +516,7 @@ class TMM_sSNOM(TMM_3PD):
 		super().__init__(array_of_sections,position,site,units)
 
 		self.coupling = coupling
+		self.z = (np.cos(np.arange(0,2*np.pi,0.1)) + 1)
 		self.O = np.zeros(len(self.k),dtype=complex)
 
 	def Calculate3PD(self):
@@ -550,7 +550,7 @@ class TMM_sSNOM_Simple(TMM_sSNOM):
 
 	def __init__(self,array_of_sections,position,site,units,coupling = 0.1):
 		super().__init__(array_of_sections,position,site,units,coupling)
-		self.c = coupling*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 1))
+		self.c = coupling*np.exp(-self.z)
 
 	def GlobalScatteringMatrix(self):
 		if not self.M_update:
@@ -604,7 +604,7 @@ class TMM_sSNOM_Advanced(TMM_sSNOM):
 		self.Calculate_c(0)														
 
 	def Calculate_c(self,i):
-		self.c = self.C[i]*np.exp(-(np.cos(np.arange(0,2*np.pi,0.2)) + 2)*2*np.pi*60e-9/self.lp[i])			# The offset is wrong but we have to take into account the detector frequency cutoff
+		self.c = self.C[i]*np.exp(-(self.z + 1)*2*np.pi*60e-9/self.lp[i])			# The offset is wrong but we have to take into account the detector frequency cutoff
 
 	def GlobalScatteringMatrix(self):
 		I = np.eye(3,dtype=complex)
@@ -657,13 +657,14 @@ if __name__ == '__main__':
 
 	Equivalence = False 							# Test the equivalence of Chunks and Interfaces vs Effective_Chunks and Effective_Interfaces
 	TransferMatrixMethod = False 					# Test the standard TMM implementation with Chunks, Interfaces, Effective_Chunks and Effective_Interfaces (Equivalence test execution needed at least once)
-	TransferMatrixMethod_3PD = True 				# Test the 3PD TMM implementation: (Equivalence test execution needed at least once)
-	GlobalScatteringMatrix_3PD = True					# GlobalScatteringMatrix c and γ dependence
-	Splitting = True									# Splitting of the structure
-	Scan_3PD = True										# Scan for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
-	TransferMatrixMethod_sSNOM_Simple = False 		# Test the sSNOM TMM simple implementation: (Equivalence test execution needed at least once)
-	Scan_sSNOM_Simple = False 							# Scan 		- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
-	Spectrum_sSNOM_Simple = False 						# Spectrum 	- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
+	TransferMatrixMethod_3PD = False 				# Test the 3PD TMM implementation: (Equivalence test execution needed at least once)
+	GlobalScatteringMatrix_3PD = False					# GlobalScatteringMatrix c and γ dependence
+	Splitting = False									# Splitting of the structure
+	Scan_3PD = False									# Scan for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
+	TransferMatrixMethod_sSNOM_Simple = True 		# Test the sSNOM TMM simple implementation: (Equivalence test execution needed at least once)
+	Signal_at_detector_sSNOM_Simple = False 			# Signal at the detector 	- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
+	Scan_sSNOM_Simple = True 							# Scan 						- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
+	Spectrum_sSNOM_Simple = False 						# Spectrum 					- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
 	TransferMatrixMethod_sSNOM_Advanced = False  	# Test the sSNOM TMM advanced implementation: (Equivalence test execution needed at least once)
 	Scan_sSNOM_Advanced = False 						# Scan 		- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
 	Spectrum_sSNOM_Advanced = False 					# Spectrum 	- for Chunks, Interfaces, Effective_Chunks and Effective_Interfaces
@@ -723,29 +724,31 @@ if __name__ == '__main__':
 		# Element S21
 		plt.figure(figsize=(12,6))
 		plt.subplot(121)
-		plt.plot(k,np.real(CHUNK_M1.S.S21),'b')
-		plt.plot(k,np.real(system_M1.S.S21),'r--',dashes=(5, 10))
+		plt.plot(k,np.real(CHUNK_M1.S.S21),'b',label="sequence")
+		plt.plot(k,np.real(system_M1.S.S21),'r--',dashes=(5, 10),label="effective")
 		plt.title('Re{S$_{21}$}', size=16)
 		plt.xlabel('Wavenumber, cm⁻¹', size=16)
 		plt.subplot(122)
-		plt.plot(k,np.imag(CHUNK_M1.S.S21),'b')
-		plt.plot(k,np.imag(system_M1.S.S21),'r--',dashes=(5, 10))
+		plt.plot(k,np.imag(CHUNK_M1.S.S21),'b',label="sequence")
+		plt.plot(k,np.imag(system_M1.S.S21),'r--',dashes=(5, 10),label="effective")
 		plt.title('Im{S$_{21}$}', size=16)
 		plt.xlabel('Wavenumber, cm⁻¹', size=16)
+		plt.legend()
 		plt.show()
 
 		# Element S12
 		plt.figure(figsize=(12,6))
 		plt.subplot(121)
-		plt.plot(k,np.real(CHUNK_M1.S.S12),'b')
-		plt.plot(k,np.real(system_M1.S.S12),'r--',dashes=(5, 10))
+		plt.plot(k,np.real(CHUNK_M1.S.S12),'b',label="sequence")
+		plt.plot(k,np.real(system_M1.S.S12),'r--',dashes=(5, 10),label="effective")
 		plt.title('Re{S$_{12}$}', size=16)
 		plt.xlabel('Wavenumber, cm⁻¹', size=16)
 		plt.subplot(122)
-		plt.plot(k,np.imag(CHUNK_M1.S.S12),'b')
-		plt.plot(k,np.imag(system_M1.S.S12),'r--',dashes=(5, 10))
+		plt.plot(k,np.imag(CHUNK_M1.S.S12),'b',label="sequence")
+		plt.plot(k,np.imag(system_M1.S.S12),'r--',dashes=(5, 10),label="effective")
 		plt.title('Im{S$_{12}$}', size=16)
 		plt.xlabel('Wavenumber, cm⁻¹', size=16)
+		plt.legend()
 		plt.show()
 
 	if TransferMatrixMethod:
@@ -775,15 +778,16 @@ if __name__ == '__main__':
 		# Comparison - Reflection and Trasmission
 		plt.figure(figsize=(12,6))
 		plt.subplot(121)
-		plt.plot(k,np.abs(Sequence_system.S.S11),'b')
-		plt.plot(k,np.abs(Effective_system.S.S11),'r--',dashes=(5, 10))
+		plt.plot(k,np.abs(Sequence_system.S.S11),'b',label="sequence")
+		plt.plot(k,np.abs(Effective_system.S.S11),'r--',dashes=(5, 10),label="effective")
 		plt.title('Abs{S$_{11}$}', size=16)
 		plt.xlabel('Wavenumber, cm⁻¹', size=16)
 		plt.subplot(122)
-		plt.plot(k,np.abs(Sequence_system.S.S12),'b')
-		plt.plot(k,np.abs(Effective_system.S.S12),'r--',dashes=(5, 10))
+		plt.plot(k,np.abs(Sequence_system.S.S12),'b',label="sequence")
+		plt.plot(k,np.abs(Effective_system.S.S12),'r--',dashes=(5, 10),label="effective")
 		plt.title('Abs{S$_{12}$}', size=16)
 		plt.xlabel('Wavenumber, cm⁻¹', size=16)
+		plt.legend()
 		plt.show()
 
 	if TransferMatrixMethod_3PD:
@@ -820,30 +824,33 @@ if __name__ == '__main__':
 			Sequence_system_TMM_3PD.UpdateLR()
 
 			# Comparison - L and R
-			plt.figure(figsize=(12,6))
-			plt.subplot(121)
-			plt.plot(k,np.real(Sequence_system_TMM_3PD.L.S.S12),'b')
-			plt.plot(k,np.real(Effective_system_TMM_3PD.L.S.S12),'r--',dashes=(5, 10))
-			plt.title('Re{L$_{12}$}', size=16)
-			plt.xlabel('Wavenumber, cm⁻¹', size=16)
-			plt.subplot(122)
-			plt.plot(k,np.imag(Sequence_system_TMM_3PD.L.S.S12),'b')
-			plt.plot(k,np.imag(Effective_system_TMM_3PD.L.S.S12),'r--',dashes=(5, 10))
-			plt.title('Im{L$_{12}$}', size=16)
-			plt.xlabel('Wavenumber, cm⁻¹', size=16)
+			f, (ax1, ax2) = plt.subplots(1, 2, sharey=True,figsize=(12,6))
+
+			ax1.plot(k,np.real(Sequence_system_TMM_3PD.L.S.S12),'b',label="sequence")
+			ax1.plot(k,np.real(Effective_system_TMM_3PD.L.S.S12),'r--',dashes=(5, 10),label="effective")
+			ax1.set_title('Re{L$_{12}$}', size=16)
+			ax1.set_xlabel('Wavenumber, cm⁻¹', size=16)
+			ax1.legend()
+
+			ax2.plot(k,np.imag(Sequence_system_TMM_3PD.L.S.S12),'b',label="sequence")
+			ax2.plot(k,np.imag(Effective_system_TMM_3PD.L.S.S12),'r--',dashes=(5, 10),label="effective")
+			ax2.set_title('Im{L$_{12}$}', size=16)
+			ax2.set_xlabel('Wavenumber, cm⁻¹', size=16)
+			ax2.legend()
 			plt.show()
 
-			plt.figure(figsize=(12,6))
-			plt.subplot(121)
-			plt.plot(k,np.real(Sequence_system_TMM_3PD.R.S.S12),'b')
-			plt.plot(k,np.real(Effective_system_TMM_3PD.R.S.S12),'r--',dashes=(5, 10))
-			plt.title('Re{R$_{12}$}', size=16)
-			plt.xlabel('Wavenumber, cm⁻¹', size=16)
-			plt.subplot(122)
-			plt.plot(k,np.imag(Sequence_system_TMM_3PD.R.S.S12),'b')
-			plt.plot(k,np.imag(Effective_system_TMM_3PD.R.S.S12),'r--',dashes=(5, 10))
-			plt.title('Im{R$_{12}$}', size=16)
-			plt.xlabel('Wavenumber, cm⁻¹', size=16)
+			f, (ax1, ax2) = plt.subplots(1, 2, sharey=True,figsize=(12,6))
+			ax1.plot(k,np.real(Sequence_system_TMM_3PD.R.S.S12),'b',label="sequence")
+			ax1.plot(k,np.real(Effective_system_TMM_3PD.R.S.S12),'r--',dashes=(5, 10),label="effective")
+			ax1.set_title('Re{R$_{12}$}', size=16)
+			ax1.set_xlabel('Wavenumber, cm⁻¹', size=16)
+			ax1.legend()
+
+			ax2.plot(k,np.imag(Sequence_system_TMM_3PD.R.S.S12),'b',label="sequence")
+			ax2.plot(k,np.imag(Effective_system_TMM_3PD.R.S.S12),'r--',dashes=(5, 10),label="effective")
+			ax2.set_title('Im{R$_{12}$}', size=16)
+			ax2.set_xlabel('Wavenumber, cm⁻¹', size=16)
+			ax2.legend()
 			plt.show()
 
 		if GlobalScatteringMatrix_3PD:
@@ -857,27 +864,47 @@ if __name__ == '__main__':
 			Sequence_system_TMM.GlobalScatteringMatrix()
 			Sequence_SG_3PD = Sequence_system_TMM_3PD.GlobalScatteringMatrix(c=c,γ=0)
 
-			plt.figure(figsize=(12,6))
-
-			plt.subplot(1,2,1)
-			plt.plot(k,np.abs(Effective_system_TMM.S.S12),'b')
-			plt.plot(k,np.abs(Effective_SG_3PD[2,1,:,0]),'r--',dashes=(5, 10))					# No coupling between the far-field and near-field channels (c = 0)
-			plt.plot(k,np.abs(Effective_SG_3PD[2,1,:,1]),'g--',dashes=(5, 2))					# Weak coupling between the far-field and near-field channels (c = 0.2)
-			plt.plot(k,np.abs(Effective_SG_3PD[2,1,:,2]),'black')								# Strong coupling between the far-field and near-field channels (c = 0.5)
-			plt.title('Effective', size=16)
+			plt.plot(k,np.abs(Effective_system_TMM.S.S12),'b',label="TMM")
+			plt.plot(k,np.abs(Effective_SG_3PD[2,1,:,0]),'r--',dashes=(5, 10),label="sSNOM TMM - no coupling")		#  (c = 0)
+			plt.plot(k,np.abs(Effective_SG_3PD[2,1,:,1]),'g--',dashes=(5, 2),label="sSNOM TMM - weak coupling")		#  (c = 0.2)
+			plt.plot(k,np.abs(Effective_SG_3PD[2,1,:,2]),'black',label="sSNOM TMM - strong coupling")				#  (c = 0.5)
+			plt.title('Transmission through the right near-field channel (effective)', size=16)
 			plt.xlabel('Wavenumber, cm⁻¹', size=16)
+			plt.ylabel('SG₃₂', size=16)
+			plt.legend()
+			plt.show()
 
-			plt.subplot(1,2,2)
-			plt.plot(k,np.abs(Sequence_system_TMM.S.S12),'b')
-			plt.plot(k,np.abs(Sequence_SG_3PD[2,1,:,0]),'r--',dashes=(5, 10))					# No coupling between the far-field and near-field channels (c = 0)
-			plt.plot(k,np.abs(Sequence_SG_3PD[2,1,:,1]),'g--',dashes=(5, 2))					# Weak coupling between the far-field and near-field channels (c = 0.2)
-			plt.plot(k,np.abs(Sequence_SG_3PD[2,1,:,2]),'black')								# Strong coupling between the far-field and near-field channels (c = 0.5)
-			plt.title('Sequence', size=16)
+			plt.plot(k,np.abs(Sequence_system_TMM.S.S12),'b',label="TMM")
+			plt.plot(k,np.abs(Sequence_SG_3PD[2,1,:,0]),'r--',dashes=(5, 10),label="sSNOM TMM - no coupling")		#  (c = 0)
+			plt.plot(k,np.abs(Sequence_SG_3PD[2,1,:,1]),'g--',dashes=(5, 2),label="sSNOM TMM - weak coupling")		# (c = 0.2)
+			plt.plot(k,np.abs(Sequence_SG_3PD[2,1,:,2]),'black',label="sSNOM TMM - strong coupling")				#  (c = 0.5)
+			plt.title('Transmission through the right near-field channel (sequence)', size=16)
 			plt.xlabel('Wavenumber, cm⁻¹', size=16)
+			plt.ylabel('SG₃₂', size=16)
 			plt.show()
 
 			# Test at different phase coefficient
-			plt.figure(figsize=(12,6))
+			f, (ax1, ax2) = plt.subplots(1,2,sharey=False,figsize=(12,6))
+
+			Effective_system_TMM_3PD.S3x3_update = False
+			Effective_SG_3PD = Effective_system_TMM_3PD.GlobalScatteringMatrix(c = 0.1,γ = np.pi/3)
+			ax1.plot(k,np.real(Effective_SG_3PD[2,1,:]),'b', label='γ = π/3')
+			ax2.plot(k,np.imag(Effective_SG_3PD[2,1,:]),'b', label='γ = π/3')
+
+			Effective_system_TMM_3PD.S3x3_update = False
+			Effective_SG_3PD = Effective_system_TMM_3PD.GlobalScatteringMatrix(c = 0.1,γ = 3*np.pi/4)
+			ax1.plot(k,np.real(Effective_SG_3PD[2,1,:]),'r--',dashes=(5, 10), label='γ = 3π/4')
+			ax2.plot(k,np.imag(Effective_SG_3PD[2,1,:]),'r--',dashes=(5, 10), label='γ = 3π/4')
+
+			ax1.set_xlabel('Wavenumber, cm⁻¹', size=16)
+			ax1.set_title('abs{SG₁₁}', size=16)
+			ax1.legend()
+
+			ax2.set_xlabel('Wavenumber, cm⁻¹', size=16)
+			ax2.set_title('phase{SG₁₁}', size=16)
+			ax2.legend()
+
+			plt.show()
 
 			S13 = []
 			for γ in np.arange(0,2*np.pi,0.1):
@@ -887,15 +914,10 @@ if __name__ == '__main__':
 
 				S13 = np.append(S13,Effective_system_TMM_3PD.S3x3[0,2,:])
 
-				plt.subplot(1,2,1)
-				plt.plot(k,np.abs(Effective_SG_3PD[2,1,:]))
-			
-			plt.subplot(1,2,1)
-			plt.title('Transmission through the right near-field channel', size=16)
-
-			plt.subplot(1,2,2)
+			plt.plot(np.arange(0,2*np.pi,0.1)/np.pi, np.angle(S13)/np.pi)
 			plt.title('3-port device coupling phase', size=16)
-			plt.plot(np.angle(S13))
+			plt.xlabel('γ, π', size=16)
+			plt.ylabel('Angle{S₁₃}, π', size=16)
 			plt.show()
 
 		if Scan_3PD:
@@ -906,25 +928,31 @@ if __name__ == '__main__':
 			x,MAP,PERM = Effective_system_TMM_3PD.Scan(sites=sites,resolution=resolution)
 			X,K = np.meshgrid(x,k)
 
-			plt.figure(figsize=(12,6))
+			f, (ax1, ax2) = plt.subplots(1,2,sharey='row',figsize=(12,6),gridspec_kw=dict(wspace=0.0))
 
-			plt.subplot(1,2,1)
-			plt.contourf(X,K,np.abs(MAP),100)
+			ax1.contourf(X,K,np.abs(MAP),100)
+			ax1.set_xlabel('X, nm', size=16)
+			ax1.set_ylabel('Wavenumber, cm⁻¹', size=16)
+			ax1.set_title('Amplitude at the detector', size=16)
 
-			plt.subplot(1,2,2)
-			plt.contourf(X,K,np.real(PERM),100)
+			ax2.contourf(X,K,np.real(PERM),100)
+			ax2.set_xlabel('X, nm', size=16)
+			ax2.set_title('Effective permittivity', size=16)
 			plt.show()
 
 			x,MAP,PERM = Sequence_system_TMM_3PD.Scan(sites=sites,resolution=resolution)
 			X,K = np.meshgrid(x,k)
 
-			plt.figure(figsize=(12,6))
+			f, (ax1, ax2) = plt.subplots(1,2,sharey='row',figsize=(12,6),gridspec_kw=dict(wspace=0.0))
 
-			plt.subplot(1,2,1)
-			plt.contourf(X,K,np.abs(MAP),100)
+			ax1.contourf(X,K,np.abs(MAP),100)
+			ax1.set_xlabel('X, nm', size=16)
+			ax1.set_ylabel('Wavenumber, cm⁻¹', size=16)
+			ax1.set_title('Amplitude at the detector', size=16)
 
-			plt.subplot(1,2,2)
-			plt.contourf(X,K,np.real(PERM),100)
+			ax2.contourf(X,K,np.real(PERM),100)
+			ax2.set_xlabel('X, nm', size=16)
+			ax2.set_title('Effective permittivity', size=16)
 			plt.show()
 
 	if TransferMatrixMethod_sSNOM_Simple:
@@ -940,7 +968,7 @@ if __name__ == '__main__':
 		RIGHT = Effective_Interface_Right("M1",k,M1)
 
 		Effective_system_TMM_sSNOM_Simple = TMM_sSNOM_Simple([LEFT,SPACING,CAVITY,SPACING,RIGHT],position,site,units)
-
+		
 		# Sequence system
 		A0_M1 = Interface("A0_M1",k)
 		M1_A0 = Interface("M1_A0",k)
@@ -961,8 +989,12 @@ if __name__ == '__main__':
 			Effective_system_TMM_sSNOM_Simple.NearField(Eᴮᴳ=Eᴮᴳ,harm=harm)
 			Sequence_system_TMM_sSNOM_Simple.NearField(Eᴮᴳ=Eᴮᴳ,harm=harm)
 
-			plt.plot(k,np.abs(Effective_system_TMM_sSNOM_Simple.O))
-			plt.plot(k,np.abs(Sequence_system_TMM_sSNOM_Simple.O),'r--',dashes=(5, 10))
+			plt.plot(k,np.abs(Effective_system_TMM_sSNOM_Simple.O),label="effective")
+			plt.plot(k,np.abs(Sequence_system_TMM_sSNOM_Simple.O),'r--',dashes=(5, 10),label="sequence")
+			plt.title("Near-field spectrum at the cavity centre", size=16)
+			plt.xlabel("Wavenumber, cm⁻¹", size=16)
+			plt.ylabel("Signal, a.u.", size=16)
+			plt.legend()
 			plt.show()
 
 		if Scan_sSNOM_Simple:
@@ -973,16 +1005,31 @@ if __name__ == '__main__':
 			x,MAP = Effective_system_TMM_sSNOM_Simple.Scan(sites=sites,resolution=resolution)
 			X,K = np.meshgrid(x,k)
 
-			plt.figure(figsize=(12,6))
+			f, (ax1, ax2) = plt.subplots(1,2,sharey='row',figsize=(12,6),gridspec_kw=dict(wspace=0.0))
 
-			plt.subplot(1,2,1)
-			plt.contourf(X,K,np.abs(MAP),100)
+			ax1.contourf(X,K,np.abs(MAP),100)
+			ax1.set_xlabel('X, nm', size=16)
+			ax1.set_ylabel('Wavenumber, cm⁻¹', size=16)
+			ax1.set_title('Near-field spectral scan (effective)', size=16)
 
 			x,MAP = Sequence_system_TMM_sSNOM_Simple.Scan(sites=sites,resolution=resolution)
 			X,K = np.meshgrid(x,k)
 
-			plt.subplot(1,2,2)
-			plt.contourf(X,K,np.abs(MAP),100)
+			ax2.contourf(X,K,np.abs(MAP),100)
+			ax2.set_xlabel('X, nm', size=16)
+			ax2.set_title('Near-field spectral scan (sequence)', size=16)
+			plt.show()
+
+		if Signal_at_detector_sSNOM_Simple:
+
+			N = 5
+			Signal = np.abs(Effective_system_TMM_sSNOM_Simple.GlobalScatteringMatrix()[0,0,20,:])**2 
+			Signal = np.tile(Signal,N)
+
+			plt.plot(Signal)
+			plt.title("Time resolved intensity", size=16)
+			plt.xlabel("Time step, a.u.", size=16)
+			plt.ylabel("Signal at the detector, a.u.", size=16)
 			plt.show()
 
 	if TransferMatrixMethod_sSNOM_Advanced:
@@ -1019,8 +1066,12 @@ if __name__ == '__main__':
 			Effective_system_TMM_sSNOM_Advanced.NearField(Eᴮᴳ=Eᴮᴳ,harm=harm)
 			Sequence_system_TMM_sSNOM_Advanced.NearField(Eᴮᴳ=Eᴮᴳ,harm=harm)
 
-			plt.plot(k,np.abs(Effective_system_TMM_sSNOM_Advanced.O))
-			plt.plot(k,np.abs(Sequence_system_TMM_sSNOM_Advanced.O),'r--',dashes=(5, 10))
+			plt.plot(k,np.abs(Effective_system_TMM_sSNOM_Advanced.O),label="effective")
+			plt.plot(k,np.abs(Sequence_system_TMM_sSNOM_Advanced.O),'r--',dashes=(5, 10),label="sequence")
+			plt.title("Near-field spectrum at the cavity centre", size=16)
+			plt.xlabel("Wavenumber, cm⁻¹", size=16)
+			plt.ylabel("Signal, a.u.", size=16)
+			plt.legend()
 			plt.show()
 
 		if Scan_sSNOM_Advanced:
@@ -1031,14 +1082,17 @@ if __name__ == '__main__':
 			x,MAP = Effective_system_TMM_sSNOM_Advanced.Scan(sites=sites,resolution=resolution)
 			X,K = np.meshgrid(x,k)
 
-			plt.figure(figsize=(12,6))
+			f, (ax1, ax2) = plt.subplots(1,2,sharey='row',figsize=(12,6),gridspec_kw=dict(wspace=0.0))
 
-			plt.subplot(1,2,1)
-			plt.contourf(X,K,np.abs(MAP),100)
+			ax1.contourf(X,K,np.abs(MAP),100)
+			ax1.set_xlabel('X, nm', size=16)
+			ax1.set_ylabel('Wavenumber, cm⁻¹', size=16)
+			ax1.set_title('Near-field spectral scan (effective)', size=16)
 
 			x,MAP = Sequence_system_TMM_sSNOM_Advanced.Scan(sites=sites,resolution=resolution)
 			X,K = np.meshgrid(x,k)
 
-			plt.subplot(1,2,2)
-			plt.contourf(X,K,np.abs(MAP),100)
+			ax2.contourf(X,K,np.abs(MAP),100)
+			ax2.set_xlabel('X, nm', size=16)
+			ax2.set_title('Near-field spectral scan (sequence)', size=16)
 			plt.show()
