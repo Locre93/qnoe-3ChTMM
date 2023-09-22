@@ -4,16 +4,28 @@ __version__ = "1.0.0"
 __author__ = "Lorenzo Orsini"
 __contributors__ = ["Matteo Ceccanti"]
 
-# Quasi-static limit q >> omega*epsion/c
-# In FermiEnergy(n): charge carrier density cm-2 
-# Create function table
-# Comment and refine test code
-
-# Graphene reference: An introduction to graphene plasmonics
-
 # ----------------------------------------------------------------------------------------------------- #
 #                                    Functions and class description                                    #
 # ----------------------------------------------------------------------------------------------------- #
+# Notes:
+# Quasistatic limit - q >> ω⋅ϵ/c
+# the variable k is the light wavenumber 1/λ [cm⁻¹]
+
+# def ReflectingInterface(k,ϕ):								# returns a ScatteringMatrix class instance 
+# def FermiEnergy(n):										# returns the graphene Fermi Energy [eV]. Here, n is the charge carrier density [1/cm²]
+
+# class hexagonalBoronNitride:(isotope,thickness,units)
+# 	def DielectricPermittivity(self, k):					# returns the hBN in-plane and out-of-plane permittivities (ϵ_xy,ϵ_xy,ϵ_z)
+# 	def MagneticPermeability(self):							# returns the hBN permeability. 
+# 	def ModeCoefficients(self, k, ϵ):						# returns the hBN modes coefficients (ϕ,ρ,R). Here, ϵ is a two-element array of the environment permittivity [Above,Below] - [Reference]
+# 	def ModeWavevector(self, k, n, ϵ):						# returns the hBN hyperbolic phonon polariton wavevector [m⁻¹]. Here, n is the index of the mode
+# 	def ModeEffectivePermittivity(self, k, n, ϵ):			# returns the hBN hyperbolic phonon polariton effective permittivity ϵ
+# 	def ModeEffectiveRefractionIndex(self, k, n, ϵ):		# returns the hBN hyperbolic phonon polariton effective index of refraction
+# 	def ModeProfile(self, k, n, ϵ):							# returns the functions of hBN hyperbolic phonon polariton filds: Ex(z), By(z), Ez(z)
+
+# class Graphene:
+# 	def ModeWavevector(self,k,Ef,ϵ,Γ=0.0037):				# returns Graphene plasmon wavevector [m⁻¹]
+# 	def ModeEffectivePermittivity(self,k,Ef,ϵ,Γ=0.0037)		# returns Graphene plasmon effective permittivity ϵ
 
 # ----------------------------------------------------------------------------------------------------- #
 
@@ -38,6 +50,7 @@ def FermiEnergy(n):
 	return ħ*vf*100*np.sqrt(np.pi*n)	# Fermi Energy [eV]
 
 class hexagonalBoronNitride:
+
 	def __init__(self,isotope,thickness,units):
 		self.isotope = isotope 
 		self.thickness = thickness * units
@@ -158,77 +171,77 @@ if __name__ == '__main__':
 
 	# --------------------------- GRAPHENE --------------------------- #
 
-	Sheet = Graphene()
-
-	n = np.arange(1e11,1e13,1e10)	# Charge carrier density [1/cm²]
+	n = np.arange(1e11,5e13,1e9)
 	plt.plot(n,FermiEnergy(n))
+	plt.xlabel("Charge carrier density, 1/cm²",size=16)
+	plt.ylabel("Fermi energy, eV",size=16)
 	plt.show()
 
-	Ef = 0.3		# Fermi energy [eV]
-	k = 333			# Wavenumber [1/cm] - 1/λ (10THz)
+	Sheet = Graphene()
+
+	# Ef = 0.3		# Fermi energy [eV]
+	k = 333			# Wavenumber [cm⁻¹] - 1/λ (10THz)
 	ϵ = [4,4]		# Dielectric permittivities of the environment [Above,Below]
 
-	Q = Sheet.ModeWavevector(k,Ef,ϵ)
-	ϵ_eff = Sheet.ModeEffectivePermittivity(k,Ef,ϵ)
-
-	λp = 2*np.pi/np.real(Q)
-	λ = 0.01/k
-
-	print(λp/λ)
-	print(np.sqrt(1/n))
+	Q = Sheet.ModeWavevector(k,FermiEnergy(n),ϵ)	# Plasmon wavevector [m⁻¹]
+	λp = 2*np.pi/np.real(Q)							# Plasmon wavelength [m]
 
 	# -------------------- HEXAGONAL BORON NITRIDE -------------------- #
 
-	nm = 1e-9
+	nm = 1e-9			# units
 
 	thickness = 10     	# hBN thickness [nm]
 	isotope = 11 		# hBN isotope
 	mode = 0 			# hBN mode
 
-	dz = 0.01     	# Vertical resolution [nm]
-	dk = 1 			# Wavenumber resolution [cm⁻¹]
-	ϵ = [1,1]		# Dielectric permittivities of the environment [Above,Below]
+	dz = 0.01     		# Vertical resolution [nm]
+	dk = 0.01 			# Wavenumber resolution [cm⁻¹]
+	ϵ = [1,1]			# Dielectric permittivities of the environment [Above,Below]
 
 	layer = hexagonalBoronNitride(isotope,thickness,nm)
 	Ex,By,Ez = layer.ModeProfile(1500, mode, ϵ)
 
 	z = np.arange(-10*thickness,10*thickness,dz)*nm
 	plt.plot(z/nm, np.abs(Ex(z)))
-	plt.ylabel('Field inteity, a.u.')
-	plt.xlabel('Z, nm')
+	plt.vlines(x=+thickness, ymin=0, ymax=2, colors='k',linestyles='dotted')
+	plt.vlines(x=-thickness, ymin=0, ymax=2, colors='k',linestyles='dotted')
+	plt.title("In-plane electric field profile at 1500cm⁻¹ - Ex(z)",size=16)
+	plt.ylabel('Field inteity, a.u.',size=16)
+	plt.xlabel('Z, nm',size=16)
 	plt.show()
 
-	k = np.arange(1400,1600,dk)
-	q = layer.ModeWavevector(k, 0, [1,1])
-	plt.plot(np.real(q),k)
-	plt.ylabel('Wavenumber, cm⁻¹')
-	plt.xlabel('Mode momentum, m⁻¹')
-	# plt.show()
+	k = np.arange(1400,1607,dk)
 
-	k = np.arange(1400,1600,dk)
-	q = layer.ModeWavevector(k, 1, [1,-1000])
-	plt.plot(np.real(q),k)
-	plt.ylabel('Wavenumber, cm⁻¹')
-	plt.xlabel('Mode momentum, m⁻¹')
+	A0 = layer.ModeWavevector(k, 0, [1,1])
+	A1 = layer.ModeWavevector(k, 1, [1,1])
+	A2 = layer.ModeWavevector(k, 2, [1,1])
+	A3 = layer.ModeWavevector(k, 3, [1,1])
+
+	plt.plot(np.real(A0),k,label="A0")
+	plt.plot(np.real(A1),k,label="A1")
+	plt.plot(np.real(A2),k,label="A2")
+	plt.plot(np.real(A3),k,label="A3")
+
+	plt.title("Hyperbolic phonon polaritons modes An - dispersion relation",size=16)
+	plt.ylabel('Wavenumber, cm⁻¹',size=16)
+	plt.xlabel('Mode momentum, m⁻¹',size=16)
+	plt.xlim([0,4e9])
+	plt.legend()
 	plt.show()
 
-	phi,pho,_ = layer.ModeCoefficients(k, [1,1])
-	plt.plot(k,np.abs(pho))
-	plt.ylabel('Wavenumber, cm⁻¹')
-	plt.xlabel('Mode momentum, m⁻¹')
+	M1 = layer.ModeWavevector(k, 1, [1,-10000])
+	M2 = layer.ModeWavevector(k, 2, [1,-10000])
+	M3 = layer.ModeWavevector(k, 3, [1,-10000])
+	M4 = layer.ModeWavevector(k, 4, [1,-10000])
+
+	plt.plot(np.real(M1),k,label="M1")
+	plt.plot(np.real(M2),k,label="M2")
+	plt.plot(np.real(M3),k,label="M3")
+	plt.plot(np.real(M4),k,label="M4")
+
+	plt.title("Hyperbolic phonon polaritons modes Mn - dispersion relation",size=16)
+	plt.ylabel('Wavenumber, cm⁻¹',size=16)
+	plt.xlabel('Mode momentum, m⁻¹',size=16)
+	plt.xlim([0,4e9])
+	plt.legend()
 	plt.show()
-
-	n = layer.ModeEffectiveRefractionIndex(k, mode, ϵ)
-	plt.plot(np.real(n),k)
-	plt.ylabel('Wavenumber, cm⁻¹')
-	plt.xlabel('Mode effective refractive index - real part')
-	plt.show()
-
-	plt.plot(np.imag(n),k)
-	plt.ylabel('Wavenumber, cm⁻¹')
-	plt.xlabel('Mode effective refractive index - imaginary part')
-	plt.show()
-
-
-
-
