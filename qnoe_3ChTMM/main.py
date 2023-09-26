@@ -229,6 +229,7 @@ class Interface(Section):
 
 	def set(self,S):
 		self.S = S
+		return self
 
 class Effective_Chunk(Chunk):
 
