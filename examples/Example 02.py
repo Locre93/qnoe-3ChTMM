@@ -10,12 +10,12 @@ Sheet = Graphene()
 
 Ef = 0.4														# Fermi energy [eV]
 ϵ = [1,1]														# Dielectric permittivities of the environment [Above,Below]
-k = np.arange(100,350,0.1) 										# Wavenumber [cm⁻¹] - 1/λ (4.497THz to 10.493THz)
+k = np.arange(100,350,1) 										# Wavenumber [cm⁻¹] - 1/λ (4.497THz to 10.493THz)
 ϵ_eff = np.real(Sheet.ModeEffectivePermittivity(k,Ef,ϵ))	
 
 # Structure initialization
 SHEET = Chunk(name="Suspended graphene",k=k,ϵ=ϵ_eff,length=10,units=μm)
-BOUNDARY = Interface(name="Boundary",k=k).set(ReflectingInterface(k=k,ϕ=0))
+BOUNDARY = Interface(name="Boundary",k=k).set(ReflectingInterface(k=k,ϕ=np.pi))		# Phese ϕ upon reflection
 
 # System initialization
 system = TMM_sSNOM_Simple([SHEET,BOUNDARY],position=1,site=1,units=μm)
@@ -30,3 +30,6 @@ plt.ylabel('Wavenumber, cm⁻¹',size=16)
 plt.title('Near-field',size=16)
 plt.show()
 
+# Missing: linecut and absorption loss scaling. Plot a relevant case study for plasmon fringes. Plot the scan with different phase upon reflection
+# and compare with Rainer result. Maybe hBN fringes are better because we can directly compare with expermiental data and do a comparison 
+# with realistic tip geometry.
