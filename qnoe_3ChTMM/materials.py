@@ -1,3 +1,4 @@
+from qnoe_3ChTMM.main import *
 import numpy as np
 
 __version__ = "1.0.0"
