@@ -517,7 +517,7 @@ class TMM_sSNOM(TMM_3PD):
 		super().__init__(array_of_sections,position,site,units)
 
 		self.coupling = coupling
-		self.z = (np.cos(np.arange(0,2*np.pi,0.1)) + 1)
+		self.z = (np.cos(np.arange(0,2*np.pi,0.063)) + 1.3)		# Normalized harmonic oscillation (len(self.z)=100)
 		self.O = np.zeros(len(self.k),dtype=complex)
 
 	def Calculate3PD(self):
@@ -605,7 +605,21 @@ class TMM_sSNOM_Advanced(TMM_sSNOM):
 		self.Calculate_c(0)														
 
 	def Calculate_c(self,i):
-		self.c = self.C[i]*np.exp(-(self.z + 1)*2*np.pi*60e-9/self.lp[i])			# The offset is wrong but we have to take into account the detector frequency cutoff
+		A = 50e-9	# Half-tapping amplitude [m]
+
+		self.c = self.C[i]*np.exp(-self.z*2*np.pi*A/self.lp[i])
+
+		# # Detector cut-off (Not relevant for midIR near-field)
+		# N = 1000
+		# self.c = np.tile(self.c,N)
+
+		# fft_c = np.fft.fft(self.c, axis = 0)
+		# freq = np.fft.fftfreq(self.c.shape[-1])
+
+		# fft_c[freq > +4*0.01] = 0
+		# fft_c[freq < -4*0.01] = 0
+
+		# self.c = np.real(np.fft.ifft(fft_c))[0:100]
 
 	def GlobalScatteringMatrix(self):
 		I = np.eye(3,dtype=complex)
