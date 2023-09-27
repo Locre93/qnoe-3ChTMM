@@ -1,51 +1,32 @@
 from qnoe_3ChTMM import * 
 import matplotlib.pyplot as plt
 
-# Section 4. Simulation of graphene plasmons
-# Constants
-# Anomalous reflection phase of graphene plasmons and its influence on resonators
+# Section 4. Simulation of hBN hyperbolic phonon polaritons
 
-μm = 1e-6
+nm = 1e-9							# Units [m]
+k = np.arange(1400,1560,0.5)		# Wavenumber [1/cm] - 1/λ
 
-# Graphene
-Sheet = Graphene()
+# From material.py:
+# Definition of the polaritonic material (hexagonal boron nitride hBN) [Reference X]
+thickness = 28   	# hBN thickness [nm]
+isotope = 11 		# hBN isotope
 
-Ef = 0.4														# Fermi energy [eV]
-ϵ = [1,1]														# Dielectric permittivities of the environment [Above,Below]
-k = np.arange(800,1800,10) 										# Wavenumber [cm⁻¹] - 1/λ (4.497THz to 10.493THz)
-ϵ_eff = Sheet.ModeEffectivePermittivity(k,Ef,ϵ)	
+hBN = hexagonalBoronNitride(isotope,thickness,nm)				# Creation of an instance of hexagonalBoronNitride class
+M1 = np.real(hBN.ModeEffectivePermittivity(k, 1, [1,-10000]))	# Calculation of the effective dielectric permittivity ϵ for the mode M1 (Real part is chosen to simulate a lossless system)
 
 # Structure initialization
-SHEET = Chunk(name="Suspended graphene",k=k,ϵ=ϵ_eff,length=2,units=μm)
+CHUNK_M1 = Chunk("M1",k,M1,1600,nm)
 BOUNDARY = Interface(name="Boundary",k=k).set(ReflectingInterface(k=k,ϕ=np.pi))		# Phese ϕ upon reflection
 
-# System initialization
-system = TMM_sSNOM_Simple([SHEET,BOUNDARY],position=1,site=1,units=μm)
+Flake_Edge = TMM_sSNOM_Advanced([CHUNK_M1,BOUNDARY],position=800,site=1,units=nm)
 
-# Near-field response calculation
-x,MAP = system.Scan(sites=[1],resolution=0.01,units=μm)
+sites = [1]
+resolution = 10
+
+x,MAP = Flake_Edge.Scan(sites=sites,resolution=resolution)
 X,K = np.meshgrid(x,k)
 
 plt.contourf(X,K,np.abs(MAP),100)
-plt.xlabel('X, μm',size=16)
-plt.ylabel('Wavenumber, cm⁻¹',size=16)
-plt.title('Near-field',size=16)
+plt.xlabel('X, nm', size=16)
+plt.title('Near-field spectral scan (sequence)', size=16)
 plt.show()
-
-# System initialization
-system = TMM_sSNOM_Advanced([SHEET,BOUNDARY],position=1,site=1,units=μm)
-
-# Near-field response calculation
-x,MAP = system.Scan(sites=[1],resolution=0.01,units=μm)
-X,K = np.meshgrid(x,k)
-
-plt.contourf(X,K,np.abs(MAP),100)
-plt.xlabel('X, μm',size=16)
-plt.ylabel('Wavenumber, cm⁻¹',size=16)
-plt.title('Near-field',size=16)
-plt.show()
-
-
-# Missing: linecut and absorption loss scaling. Plot a relevant case study for plasmon fringes. Plot the scan with different phase upon reflection
-# and compare with Rainer result. Maybe hBN fringes are better because we can directly compare with expermiental data and do a comparison 
-# with realistic tip geometry.
