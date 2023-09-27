@@ -27,6 +27,7 @@ x,MAP = Flake_Edge.Scan(sites=sites,resolution=resolution)
 X,K = np.meshgrid(x,k)
 
 plt.contourf(X,K,np.abs(MAP),100)
+plt.ylabel('Wavenumber, cm⁻¹', size=16)
 plt.xlabel('X, nm', size=16)
-plt.title('Near-field spectral scan (sequence)', size=16)
+plt.title('Near-field fringes with reflection phase (120º)', size=16)
 plt.show()
