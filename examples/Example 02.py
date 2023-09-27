@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 # Section 4. Simulation of hBN hyperbolic phonon polaritons
 
 nm = 1e-9							# Units [m]
-k = np.arange(1400,1560,0.5)		# Wavenumber [1/cm] - 1/λ
+k = np.arange(1400,1560,1)		# Wavenumber [1/cm] - 1/λ
 
 # From material.py:
 # Definition of the polaritonic material (hexagonal boron nitride hBN) [Reference X]
@@ -21,7 +21,7 @@ BOUNDARY = Interface(name="Boundary",k=k).set(ReflectingInterface(k=k,ϕ=np.pi))
 Flake_Edge = TMM_sSNOM_Advanced([CHUNK_M1,BOUNDARY],position=800,site=1,units=nm)
 
 sites = [1]
-resolution = 10
+resolution = 20
 
 x,MAP = Flake_Edge.Scan(sites=sites,resolution=resolution)
 X,K = np.meshgrid(x,k)
