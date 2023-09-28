@@ -1,9 +1,13 @@
-from qnoe_3ChTMM.main import *
+from qnoe_3ChTMM.main import ScatteringMatrix
 import numpy as np
 
 __version__ = "1.0.0"
 __author__ = "Lorenzo Orsini"
 __contributors__ = ["Matteo Ceccanti"]
+
+# REFERENCES
+# For the hBN material constants 	- https://doi.org/10.1038/nmat5047 (Supplementary)
+# For graphene plasmons				- https://doi.org/10.1142/9948 (An Introduction to Graphene Plasmonics)
 
 # ----------------------------------------------------------------------------------------------------- #
 #                                    Functions and class description                                    #
@@ -12,25 +16,25 @@ __contributors__ = ["Matteo Ceccanti"]
 # Quasistatic limit - q >> ω⋅ϵ/c
 # the variable k is the light wavenumber 1/λ [cm⁻¹]
 
-# def ReflectingInterface(k,ϕ):								# returns a ScatteringMatrix class instance 
-# def FermiEnergy(n):										# returns the graphene Fermi Energy [eV]. Here, n is the charge carrier density [1/cm²]
+# def reflecting_interface(k,ϕ):							# returns a ScatteringMatrix class instance 
+# def fermi_energy(n):										# returns the graphene Fermi Energy [eV]. Here, n is the charge carrier density [1/cm²]
 
-# class hexagonalBoronNitride:(isotope,thickness,units)
-# 	def DielectricPermittivity(self, k):					# returns the hBN in-plane and out-of-plane permittivities (ϵ_xy,ϵ_xy,ϵ_z)
-# 	def MagneticPermeability(self):							# returns the hBN permeability. 
-# 	def ModeCoefficients(self, k, ϵ):						# returns the hBN modes coefficients (ϕ,ρ,R). Here, ϵ is a two-element array of the environment permittivity [Above,Below] - [Reference]
-# 	def ModeWavevector(self, k, n, ϵ):						# returns the hBN hyperbolic phonon polariton wavevector [m⁻¹]. Here, n is the index of the mode
-# 	def ModeEffectivePermittivity(self, k, n, ϵ):			# returns the hBN hyperbolic phonon polariton effective permittivity ϵ
-# 	def ModeEffectiveRefractionIndex(self, k, n, ϵ):		# returns the hBN hyperbolic phonon polariton effective index of refraction
-# 	def ModeProfile(self, k, n, ϵ):							# returns the functions of hBN hyperbolic phonon polariton filds: Ex(z), By(z), Ez(z)
+# class HexagonalBoronNitride:(isotope,thickness,units)
+# 	def dielectric_permittivity(k):						# returns the hBN in-plane and out-of-plane permittivities (ϵ_xy,ϵ_xy,ϵ_z)
+# 	def magnetic_permeability():						# returns the hBN permeability. 
+# 	def mode_coefficients(k,ϵ):							# returns the hBN modes coefficients (ϕ,ρ,R). Here, ϵ is a two-element array of the environment permittivity [Above,Below] - [Reference]
+# 	def mode_wavevector(k,n,ϵ):							# returns the hBN hyperbolic phonon polariton wavevector [m⁻¹]. Here, n is the index of the mode
+# 	def mode_effective_permittivity(k,n,ϵ):				# returns the hBN hyperbolic phonon polariton effective permittivity ϵ
+# 	def mode_effective_refraction_index(k,n,ϵ):			# returns the hBN hyperbolic phonon polariton effective index of refraction
+# 	def mode_profile(k,n,ϵ):							# returns the functions of hBN hyperbolic phonon polariton filds: Ex(z), By(z), Ez(z)
 
 # class Graphene:
-# 	def ModeWavevector(self,k,Ef,ϵ,Γ=0.0037):				# returns Graphene plasmon wavevector [m⁻¹]
-# 	def ModeEffectivePermittivity(self,k,Ef,ϵ,Γ=0.0037)		# returns Graphene plasmon effective permittivity ϵ
+# 	def mode_wavevector(self,k,Ef,ϵ,Γ=0.0037):					# returns Graphene plasmon wavevector [m⁻¹]
+# 	def mode_effective_permittivity(self,k,Ef,ϵ,Γ=0.0037)		# returns Graphene plasmon effective permittivity ϵ
 
 # ----------------------------------------------------------------------------------------------------- #
 
-def ReflectingInterface(k,ϕ):
+def reflecting_interface(k,ϕ):
 	S = ScatteringMatrix(k)
 
 	dim = len(k)
@@ -42,7 +46,7 @@ def ReflectingInterface(k,ϕ):
 
 	return S
 
-def FermiEnergy(n):
+def fermi_energy(n):
 	e = 1.60217663e-19		# Elemntary charge [C]
 	ħ = 6.582119569e-16		# Planck constant [eV⋅s] 
 	c = 299792458			# Speed of light [m/s]
@@ -50,7 +54,7 @@ def FermiEnergy(n):
 
 	return ħ*vf*100*np.sqrt(np.pi*n)	# Fermi Energy [eV]
 
-class hexagonalBoronNitride:
+class HexagonalBoronNitride:
 
 	def __init__(self,isotope,thickness,units):
 		self.isotope = isotope 
@@ -73,20 +77,20 @@ class hexagonalBoronNitride:
 			self.kᵀᴼ = [760,1366.2]		# TO phonon wavenumber cm⁻¹
 			self.Γ = [2,7]				# Damping constant cm⁻¹
 
-	def DielectricPermittivity(self, k):
+	def dielectric_permittivity(self,k):
 
 		ϵ_xy = self.ϵᴵ[1]*(1 + (self.kᴸᴼ[1]**2 - self.kᵀᴼ[1]**2)/(self.kᵀᴼ[1]**2 - k**2 - 1j*k*self.Γ[1]))
 		ϵ_z = self.ϵᴵ[0]*(1 + (self.kᴸᴼ[0]**2 - self.kᵀᴼ[0]**2)/(self.kᵀᴼ[0]**2 - k**2 - 1j*k*self.Γ[0]))
 
 		return [ϵ_xy,ϵ_xy,ϵ_z]
 
-	def MagneticPermeability(self):
+	def magnetic_permeability(self):
 		return [1,1,1]
 
-	def ModeCoefficients(self, k, ϵ):
+	def mode_coefficients(self,k,ϵ):
 
-		ϵ_xy = self.DielectricPermittivity(k)[0]
-		ϵ_z = self.DielectricPermittivity(k)[2]
+		ϵ_xy = self.dielectric_permittivity(k)[0]
+		ϵ_z = self.dielectric_permittivity(k)[2]
 
 		ϕ = np.sqrt(-ϵ_xy/ϵ_z)
 		R = [(ϵ_xy - 1j*ϵ[0]*ϕ)/(ϵ_xy + 1j*ϵ[0]*ϕ),(ϵ_xy - 1j*ϵ[1]*ϕ)/(ϵ_xy + 1j*ϵ[1]*ϕ)]
@@ -94,34 +98,34 @@ class hexagonalBoronNitride:
 
 		return ϕ,ρ,R
 
-	def ModeWavevector(self, k, n, ϵ):
+	def mode_wavevector(self,k,n,ϵ):
 
-		ϵ_xy = self.DielectricPermittivity(k)[0]
-		ϵ_z = self.DielectricPermittivity(k)[2]
+		ϵ_xy = self.dielectric_permittivity(k)[0]
+		ϵ_z = self.dielectric_permittivity(k)[2]
 
-		ϕ,ρ,R = self.ModeCoefficients(k,ϵ)
+		ϕ,ρ,R = self.mode_coefficients(k,ϵ)
 
 		K = (np.pi/(2*self.thickness))*(ρ + 2*n) - (1j/(2*self.thickness))*np.log(np.abs(R[0])*np.abs(R[1]))
 		Q = ((np.real(K)*np.real(ϕ) + np.imag(K)*np.imag(ϕ)) + 1j*(-np.real(K)*np.imag(ϕ) + np.imag(K)*np.real(ϕ)))/(np.abs(ϕ)**2)
 
 		return Q
 
-	def ModeEffectivePermittivity(self, k, n, ϵ):
-		return ((0.01/k)*self.ModeWavevector(k, n, ϵ)/(2*np.pi))**2
+	def mode_effective_permittivity(self,k,n,ϵ):
+		return ((0.01/k)*self.mode_wavevector(k,n,ϵ)/(2*np.pi))**2
 
-	def ModeEffectiveRefractionIndex(self, k, n, ϵ):
+	def mode_effective_refraction_index(self,k,n,ϵ):
 
-		N = (0.01/k)*self.ModeWavevector(k, n, ϵ)/(2*np.pi)
+		N = (0.01/k)*self.mode_wavevector(k,n,ϵ)/(2*np.pi)
 
 		return N
 
-	def ModeProfile(self, k, n, ϵ):
+	def mode_profile(self, k, n, ϵ):
 
-		ϵ_xy = self.DielectricPermittivity(k)[0]
-		ϵ_z = self.DielectricPermittivity(k)[2]
+		ϵ_xy = self.dielectric_permittivity(k)[0]
+		ϵ_z = self.dielectric_permittivity(k)[2]
 
-		ϕ,_,R = self.ModeCoefficients(k,ϵ)
-		Q = self.ModeWavevector(k,n,ϵ)
+		ϕ,_,R = self.mode_coefficients(k,ϵ)
+		Q = self.mode_wavevector(k,n,ϵ)
 
 		r = R[0]*np.exp(-1j*Q*ϕ*self.thickness)
 		t = [np.exp(-1j*Q*ϕ*self.thickness/2) + r*np.exp(+1j*Q*ϕ*self.thickness/2), np.exp(+1j*Q*ϕ*self.thickness/2) + r*np.exp(-1j*Q*ϕ*self.thickness/2)]
@@ -151,7 +155,7 @@ class Graphene:
 	def __init__(self):
 		pass
 
-	def ModeWavevector(self,k,Ef,ϵ,Γ=0.0037):
+	def mode_wavevector(self,k,Ef,ϵ,Γ=0.0037):
 		α = 0.0072973525693		# Fine-structure constant
 		ħ = 6.582119569e-16		# Planck constant [eV⋅s]
 		c = 299792458			# Speed of light [m/s]
@@ -163,8 +167,8 @@ class Graphene:
 
 		return Q				# Graphene plasmon wavevector [1/m]
 
-	def ModeEffectivePermittivity(self,k,Ef,ϵ,Γ=0.0037):
-		return ((0.01/k)*self.ModeWavevector(k,Ef,ϵ,Γ)/(2*np.pi))**2
+	def mode_effective_permittivity(self,k,Ef,ϵ,Γ=0.0037):
+		return ((0.01/k)*self.mode_wavevector(k,Ef,ϵ,Γ)/(2*np.pi))**2
 
 if __name__ == '__main__':
 
@@ -173,7 +177,7 @@ if __name__ == '__main__':
 	# --------------------------- GRAPHENE --------------------------- #
 
 	n = np.arange(1e11,5e13,1e9)
-	plt.plot(n,FermiEnergy(n))
+	plt.plot(n,fermi_energy(n))
 	plt.xlabel("Charge carrier density, 1/cm²",size=16)
 	plt.ylabel("Fermi energy, eV",size=16)
 	plt.show()
@@ -184,7 +188,7 @@ if __name__ == '__main__':
 	k = 333			# Wavenumber [cm⁻¹] - 1/λ (10THz)
 	ϵ = [4,4]		# Dielectric permittivities of the environment [Above,Below]
 
-	Q = Sheet.ModeWavevector(k,FermiEnergy(n),ϵ)	# Plasmon wavevector [m⁻¹]
+	Q = Sheet.mode_wavevector(k,fermi_energy(n),ϵ)	# Plasmon wavevector [m⁻¹]
 	λp = 2*np.pi/np.real(Q)							# Plasmon wavelength [m]
 
 	# -------------------- HEXAGONAL BORON NITRIDE -------------------- #
@@ -199,8 +203,8 @@ if __name__ == '__main__':
 	dk = 0.01 			# Wavenumber resolution [cm⁻¹]
 	ϵ = [1,1]			# Dielectric permittivities of the environment [Above,Below]
 
-	layer = hexagonalBoronNitride(isotope,thickness,nm)
-	Ex,By,Ez = layer.ModeProfile(1500, mode, ϵ)
+	hBN = HexagonalBoronNitride(isotope,thickness,nm)
+	Ex,By,Ez = hBN.mode_profile(1500,mode,ϵ)
 
 	z = np.arange(-10*thickness,10*thickness,dz)*nm
 	plt.plot(z/nm, np.abs(Ex(z)))
@@ -213,10 +217,10 @@ if __name__ == '__main__':
 
 	k = np.arange(1400,1607,dk)
 
-	A0 = layer.ModeWavevector(k, 0, [1,1])
-	A1 = layer.ModeWavevector(k, 1, [1,1])
-	A2 = layer.ModeWavevector(k, 2, [1,1])
-	A3 = layer.ModeWavevector(k, 3, [1,1])
+	A0 = hBN.mode_wavevector(k, 0, [1,1])
+	A1 = hBN.mode_wavevector(k, 1, [1,1])
+	A2 = hBN.mode_wavevector(k, 2, [1,1])
+	A3 = hBN.mode_wavevector(k, 3, [1,1])
 
 	plt.plot(np.real(A0),k,label="A0")
 	plt.plot(np.real(A1),k,label="A1")
@@ -230,10 +234,10 @@ if __name__ == '__main__':
 	plt.legend()
 	plt.show()
 
-	M1 = layer.ModeWavevector(k, 1, [1,-10000])
-	M2 = layer.ModeWavevector(k, 2, [1,-10000])
-	M3 = layer.ModeWavevector(k, 3, [1,-10000])
-	M4 = layer.ModeWavevector(k, 4, [1,-10000])
+	M1 = hBN.mode_wavevector(k, 1, [1,-10000])
+	M2 = hBN.mode_wavevector(k, 2, [1,-10000])
+	M3 = hBN.mode_wavevector(k, 3, [1,-10000])
+	M4 = hBN.mode_wavevector(k, 4, [1,-10000])
 
 	plt.plot(np.real(M1),k,label="M1")
 	plt.plot(np.real(M2),k,label="M2")
