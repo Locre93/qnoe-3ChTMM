@@ -16,8 +16,8 @@ Q = np.zeros(shape = (len(k),len(Ef)), dtype = complex)
 λp = np.zeros(shape = (len(k),len(Ef)), dtype = complex)
 
 for i in range(len(Ef)):
-	Q[:,i] = Sheet.ModeWavevector(k,Ef[i],ϵ)							# Plasmon wavevector [m⁻¹]
-	ϵ_eff[:,i] = np.real(Sheet.ModeEffectivePermittivity(k,Ef[i],ϵ))	# Plasmon's effective permittivity
+	Q[:,i] = Sheet.mode_wavevector(k,Ef[i],ϵ)							# Plasmon wavevector [m⁻¹]
+	ϵ_eff[:,i] = np.real(Sheet.mode_effective_permittivity(k,Ef[i],ϵ))	# Plasmon's effective permittivity
 	λp[:,i] = 2*np.pi/np.real(Q[:,i])									# Plasmon wavelength [m]
 
 # plt.plot(np.real(Q),k)
@@ -35,15 +35,15 @@ for i in range(len(Ef)):
 # For a 7μm Fabry-Peròt gate defined cavity:
 # EFFECT OF COUPLING COEFFICIENT
 
-LEFT = Effective_Interface_Left("Ef 0.2eV",k,ϵ_eff[:,0])
-CAVITY = Effective_Chunk("Ef 0.4eV",k,ϵ_eff[:,3],7,1e-6)
-RIGHT = Effective_Interface_Right("Ef 0.2eV",k,ϵ_eff[:,0])
+LEFT = EffectiveInterfaceLeft("Ef 0.2eV",k,ϵ_eff[:,0])
+CAVITY = EffectiveChunk("Ef 0.4eV",k,ϵ_eff[:,3],7,1e-6)
+RIGHT = EffectiveInterfaceRight("Ef 0.2eV",k,ϵ_eff[:,0])
 
 system_2Ch = TMM([LEFT,CAVITY,RIGHT])
-system_2Ch.GlobalScatteringMatrix()
+system_2Ch.global_scattering_matrix()
 
 system_3Ch = TMM_3PD([LEFT,CAVITY,RIGHT],position=1.5,site=1,units=1e-6)
-system_3Ch_3PD = system_3Ch.GlobalScatteringMatrix(c=[0.,0.2,0.5],γ=0)
+system_3Ch_3PD = system_3Ch.global_scattering_matrix(c=[0.,0.2,0.5],γ=0)
 
 plt.plot(k,np.abs(system_2Ch.S.S12),'b',label="TMM WO the 3-port device")
 plt.plot(k,np.abs(system_3Ch_3PD[2,1,:,0]),'r--',dashes=(5, 2),label="TMM W the 3-port device - no coupling")			#  (c = 0)
@@ -59,12 +59,12 @@ plt.show()
 f, (ax1, ax2) = plt.subplots(1,2,sharey=False,figsize=(12,6))
 
 system_3Ch.S3x3_update = False
-SG_3PD = system_3Ch.GlobalScatteringMatrix(c = 0.1,γ = np.pi/3)
+SG_3PD = system_3Ch.global_scattering_matrix(c = 0.1,γ = np.pi/3)
 ax1.plot(k,np.real(SG_3PD[2,1,:]),'b', label='γ = π/3')
 ax2.plot(k,np.imag(SG_3PD[2,1,:]),'b', label='γ = π/3')
 
 system_3Ch.S3x3_update = False
-SG_3PD = system_3Ch.GlobalScatteringMatrix(c = 0.1,γ = 3*np.pi/4)
+SG_3PD = system_3Ch.global_scattering_matrix(c = 0.1,γ = 3*np.pi/4)
 ax1.plot(k,np.real(SG_3PD[2,1,:]),'r--',dashes=(5, 10), label='γ = 3π/4')
 ax2.plot(k,np.imag(SG_3PD[2,1,:]),'r--',dashes=(5, 10), label='γ = 3π/4')
 
@@ -82,7 +82,7 @@ S13 = []
 for γ in np.arange(0,2*np.pi,0.1):
 
 	system_3Ch.S3x3_update = False
-	system_3Ch.GlobalScatteringMatrix(c = 0.1,γ = γ)
+	system_3Ch.global_scattering_matrix(c = 0.1,γ = γ)
 
 	S13 = np.append(S13,system_3Ch.S3x3[0,2,:])
 
