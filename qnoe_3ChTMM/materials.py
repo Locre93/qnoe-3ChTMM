@@ -34,15 +34,16 @@ __contributors__ = ["Matteo Ceccanti"]
 
 # ----------------------------------------------------------------------------------------------------- #
 
-def reflecting_interface(k,ϕ):
+def reflecting_interface(k,ϕ,r=1):
 	S = ScatteringMatrix(k)
 
 	dim = len(k)
 
-	S.S12 = np.zeros(dim,dtype=complex)
-	S.S21 = np.zeros(dim,dtype=complex)
-	S.S11 = np.ones(dim,dtype=complex)*np.exp(1j*ϕ)
-	S.S22 = np.ones(dim,dtype=complex)*np.exp(1j*ϕ)
+	S.S11 = r*np.ones(dim,dtype=complex)*np.exp(1j*ϕ)
+	S.S22 = -r*np.ones(dim,dtype=complex)*np.exp(-1j*ϕ)
+
+	S.S12 = np.sqrt(1-r**2)*np.ones(dim,dtype=complex)
+	S.S21 = np.sqrt(1-r**2)*np.ones(dim,dtype=complex)
 
 	return S
 
