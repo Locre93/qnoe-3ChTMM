@@ -16,7 +16,7 @@ __contributors__ = ["Matteo Ceccanti"]
 # Quasistatic limit - q >> ω⋅ϵ/c
 # the variable k is the light wavenumber 1/λ [cm⁻¹]
 
-# def reflecting_interface(k,ϕ):							# returns a ScatteringMatrix class instance 
+# def reflecting_interface(k,ϕ,r):							# returns a ScatteringMatrix class instance 
 # def fermi_energy(n):										# returns the graphene Fermi Energy [eV]. Here, n is the charge carrier density [1/cm²]
 
 # class HexagonalBoronNitride:(isotope,thickness,units)
