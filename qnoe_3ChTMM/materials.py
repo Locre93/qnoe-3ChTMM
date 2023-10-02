@@ -40,7 +40,7 @@ def reflecting_interface(k,ϕ,r=1):
 	dim = len(k)
 
 	S.S11 = r*np.ones(dim,dtype=complex)*np.exp(1j*ϕ)
-	S.S22 = -r*np.ones(dim,dtype=complex)*np.exp(-1j*ϕ)
+	S.S22 = r*np.ones(dim,dtype=complex)*np.exp(1j*ϕ)
 
 	S.S12 = np.sqrt(1-r**2)*np.ones(dim,dtype=complex)
 	S.S21 = np.sqrt(1-r**2)*np.ones(dim,dtype=complex)
