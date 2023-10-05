@@ -509,7 +509,7 @@ class TMM_sSNOM(TMM_3PD):
 		super().__init__(array_of_sections,position,site,units)
 
 		self.coupling = coupling
-		self.z = (np.cos(np.arange(0,2*np.pi,0.063)) + 1.3)		# Normalized harmonic oscillation (len(self.z)=100)
+		self.z = (np.cos(np.arange(0,2*np.pi,0.2)) + 1.3)		# Normalized harmonic oscillation (len(self.z)=100) - MEMORY INTENSE
 		self.O = np.zeros(len(self.k),dtype=complex)
 
 	def calculate_3PD(self):
