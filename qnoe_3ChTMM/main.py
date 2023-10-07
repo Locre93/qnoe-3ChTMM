@@ -1,3 +1,4 @@
+from scipy.linalg import eig
 from tqdm import tqdm
 import numpy as np
 import itertools
@@ -70,6 +71,7 @@ __contributors__ = ["Sergi Battle Porro"]
 # class TMM:(array_of_sections)							- Scattering type transfer matrix method class
 # 	def global_scattering_matrix()						# Method to calculate the global scattering matrix of the structure
 # 	def reflection_impedance()							# Method to calculate the reflection impedence of the structure of the left- and right-hand side
+#   def band_structure(atol=1e-8)						# Method to calculate the bandstructure of the structure assuming periodic boundary conditions		
 
 # class TMM_3PD():(array_of_sections,position,site,units)		- 3-port-device scattering type transfer matrix method class
 # 	def split_structure(position,site,units)					# Method to split the structure at the point of insertion of the 3-port-device
@@ -380,6 +382,48 @@ class TMM:
 		Z_right = (1 + self.S.S22)/(1 - self.S.S22)
 
 		return Z_left, Z_right
+
+	def band_structure(self,atol=1e-8):
+
+		self.global_scattering_matrix()
+
+		Aux_A = np.stack((np.stack((self.S.S11,self.S.S21),axis=0),np.stack((-np.ones(len(self.k)),np.zeros(len(self.k))),axis=0)),axis=1)
+		Aux_B = np.stack((np.stack((np.zeros(len(self.k)),np.ones(len(self.k))),axis=0),np.stack((-self.S.S12,-self.S.S22),axis=0)),axis=1)
+
+		for j in range(len(self.k)):
+			Λ, P = eig(Aux_A[:,:,j], Aux_B[:,:,j])
+
+			if j == 0:
+				λa = np.array([Λ[0]])
+				λb = np.array([Λ[1]])
+
+				Pa_p =  np.array(P[0,0])
+				Pa_cp =  np.array(P[1,0])
+				Pb_p =  np.array(P[0,1])
+				Pb_cp =  np.array(P[1,1])
+
+			else:
+				λa = np.append(λa,np.array([Λ[0]]))
+				λb = np.append(λb,np.array([Λ[1]]))
+
+				Pa_p =   np.append(Pa_p,np.array(P[0,0]))
+				Pa_cp =   np.append(Pa_cp,np.array(P[1,0]))
+				Pb_p =   np.append(Pb_p,np.array(P[0,1]))
+				Pb_cp =   np.append(Pb_cp,np.array(P[1,1]))
+
+		Ka = -1j*np.log(λa)		# real Kx gives the band structure
+		Kb = -1j*np.log(λb)		# imag Kx gives the Bands
+
+		Ka_band_index = np.isclose(np.imag(Ka),0, atol=atol)
+		Kb_band_index = np.isclose(np.imag(Kb),0, atol=atol)
+
+		Ka = Ka[Ka_band_index]
+		Kb = Kb[Kb_band_index]
+
+		Ea = self.k[Ka_band_index]
+		Eb = self.k[Kb_band_index]
+
+		return Ka,Ea,Kb,Eb
 
 class TMM_3PD():
 
