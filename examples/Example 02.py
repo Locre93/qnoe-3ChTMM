@@ -15,10 +15,10 @@ hBN = HexagonalBoronNitride(isotope,thickness,nm)			# Creation of an instance of
 M1 = hBN.mode_effective_permittivity(k, 1, [1,-10000])		# Calculation of the effective dielectric permittivity ϵ for the mode M1 (Real part is chosen to simulate a lossless system)
 
 # Structure initialization
-CHUNK_M1 = Chunk("M1",k,M1,1600,nm)
-BOUNDARY = Interface(name="Boundary",k=k).set(reflecting_interface(k=k,ϕ=120*np.pi/180))		# Phese ϕ upon reflection
+CHUNK_M1 = Chunk("M1",k,M1,800,nm)
+BOUNDARY = Interface(name="Boundary",k=k).set(reflecting_interface(k=k,ϕ=0*np.pi/180))		# Phese ϕ upon reflection
 
-Flake_Edge = TMM_sSNOM_Advanced([CHUNK_M1,BOUNDARY],position=800,site=1,units=nm)
+Flake_Edge = TMM_sSNOM_Advanced([CHUNK_M1,BOUNDARY],position=400,site=1,units=nm)
 
 sites = [1]
 resolution = 10
