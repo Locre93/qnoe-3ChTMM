@@ -553,7 +553,7 @@ class TMM_sSNOM(TMM_3PD):
 		super().__init__(array_of_sections,position,site,units)
 
 		self.coupling = coupling
-		self.z = (np.cos(np.arange(0,2*np.pi,0.2)) + 1.3)		# Normalized harmonic oscillation (len(self.z)=100) - MEMORY INTENSE
+		self.z = (np.cos(np.arange(0,2*np.pi,0.1)) + 1.3)		# Normalized harmonic oscillation (len(self.z)=100) - MEMORY INTENSE
 		self.O = np.zeros(len(self.k),dtype=complex)
 
 	def calculate_3PD(self):
@@ -579,9 +579,13 @@ class TMM_sSNOM(TMM_3PD):
 
 	def near_field(self,Eᴮᴳ,harm):
 		N = 500
-		B = np.abs(self.global_scattering_matrix()[0,0,:,:] + Eᴮᴳ)**2 
 
-		self.O = np.fft.fft(np.tile(B,N), axis = 1)[:,harm*N]
+		if Eᴮᴳ == 0:
+			Signal = self.global_scattering_matrix()[0,0,:,:]					# Pseudo-heterodyne
+		else:
+			Signal = np.abs(self.global_scattering_matrix()[0,0,:,:] + Eᴮᴳ)**2 	# Self-homodyne
+
+		self.O = np.fft.fft(np.tile(Signal,N), axis = 1)[:,harm*N]
 
 class TMM_sSNOM_Simple(TMM_sSNOM):
 
@@ -1072,7 +1076,9 @@ if __name__ == '__main__':
 
 		if Signal_at_detector_sSNOM_Simple:
 
-			N = 5
+			harm = 4
+
+			N = 10
 			Signal = np.abs(Effective_system_TMM_sSNOM_Simple.global_scattering_matrix()[0,0,20,:])**2 
 			Signal = np.tile(Signal,N)
 
