@@ -578,7 +578,7 @@ class TMM_sSNOM(TMM_3PD):
 		self.S3x3_update = True
 
 	def near_field(self,Eᴮᴳ,harm):
-		N = 500
+		N = 100
 
 		if Eᴮᴳ == 0:
 			Signal = self.global_scattering_matrix()[0,0,:,:]					# Pseudo-heterodyne
