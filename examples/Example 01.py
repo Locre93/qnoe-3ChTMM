@@ -20,17 +20,17 @@ for i in range(len(Ef)):
 	ϵ_eff[:,i] = np.real(Sheet.mode_effective_permittivity(k,Ef[i],ϵ))	# Plasmon's effective permittivity
 	λp[:,i] = 2*np.pi/np.real(Q[:,i])									# Plasmon wavelength [m]
 
-# plt.plot(np.real(Q),k)
-# plt.title("Plasmon dispersion relation",size=16)
-# plt.ylabel('Wavenumber, cm⁻¹',size=16)
-# plt.xlabel('Momentum, m⁻¹',size=16)
-# plt.show()
+plt.plot(np.real(Q),k)
+plt.title("Plasmon dispersion relation",size=16)
+plt.ylabel('Wavenumber, cm⁻¹',size=16)
+plt.xlabel('Momentum, m⁻¹',size=16)
+plt.show()
 
-# plt.plot(np.real(λp*1e6),k)
-# plt.title("Plasmon dispersion relation",size=16)
-# plt.ylabel('Wavenumber, cm⁻¹',size=16)
-# plt.xlabel('Wavelength, μm',size=16)
-# plt.show()
+plt.plot(np.real(λp*1e6),k)
+plt.title("Plasmon dispersion relation",size=16)
+plt.ylabel('Wavenumber, cm⁻¹',size=16)
+plt.xlabel('Wavelength, μm',size=16)
+plt.show()
 
 # For a 7μm Fabry-Peròt gate defined cavity:
 # EFFECT OF COUPLING COEFFICIENT
@@ -102,5 +102,3 @@ plt.title("s-SNOM scattering phase")
 plt.ylabel('Wavenumber, cm⁻¹', size=16)
 plt.xlabel('Coupling phase γ', size=16)
 plt.show()
-
-
