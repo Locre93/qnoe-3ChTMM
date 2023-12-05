@@ -6,4 +6,4 @@ setup(name='qnoe-3ChTMM',
       author='Lorenzo Orsini',
       author_email='lorenzo.orsini@icfo.eu',
       url='https://github.com/Locre93/qnoe-3ChTMM',
-      install_requires=['numpy','tqdm','itertools','matplotlib','scipy'])
+      install_requires=['numpy','tqdm','matplotlib','scipy'])
