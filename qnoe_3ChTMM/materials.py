@@ -147,7 +147,7 @@ class HexagonalBoronNitride:
 			return below_hBN_region(z)*(-1j*t[0]*np.exp(+Q*(z+self.thickness/2))) + hBN_region(z)*(-ϕ*(np.exp(+1j*Q*ϕ*z) - r*np.exp(-1j*Q*ϕ*z))) + above_hBN_region(z)*(+1j*t[1]*np.exp(-Q*(z-self.thickness/2)))
 
 		def By(z):
-			return below_hBN_region(z)*(100*k*ϵ[0]*(-1j*t[0]*np.exp(+Q*(z+self.thickness/2)))/Q) + hBN_region(z)*(100*k*ϵ_z*(-ϕ*(np.exp(+1j*Q*ϕ*z) - r*np.exp(-1j*Q*ϕ*z)))/Q) + above_hBN_region(z)*(100*k*ϵ[1]*(+1j*t[1]*np.exp(-Q*(z-self.thickness/2)))/Q)
+			return below_hBN_region(z)*8.85e-12*(100*k*ϵ[0]*(-1j*t[0]*np.exp(+Q*(z+self.thickness/2)))/Q) + hBN_region(z)*8.85e-12*(100*k*ϵ_z*(-ϕ*(np.exp(+1j*Q*ϕ*z) - r*np.exp(-1j*Q*ϕ*z)))/Q) + above_hBN_region(z)*8.85e-12*(100*k*ϵ[1]*(+1j*t[1]*np.exp(-Q*(z-self.thickness/2)))/Q)
 
 		return Ex, By, Ez
 
