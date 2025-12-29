@@ -53,6 +53,67 @@ This script demonstrates how `qnoe-3ChTMM` can be used to study polaritonic crys
 
 ---
 
+## Main Module (`main.py`)
+
+The `main.py` module implements the core **three-channel Transfer Matrix Method (TMM)** framework, combining standard guided-mode propagation with a localized 3×3 scattering device. It provides classes for constructing layered structures, computing scattering matrices, and simulating near-field observables.
+
+### Key Classes
+
+#### `Chunk`
+Represents a homogeneous section of a waveguide supporting guided modes.  
+**Main methods:**
+- `propagate()` → Returns the propagation matrix for the chunk.
+- `scattering_matrix()` → Computes the scattering matrix of the chunk.
+
+#### `Interface`
+Models an interface between two guided-mode sections.  
+**Main methods:**
+- `scattering_matrix()` → Returns the interface scattering matrix.
+
+#### `EffectiveChunk`
+Computes the effective scattering matrix of a chunk using analytical mode solutions.  
+
+#### `EffectiveInterface`
+Computes the effective scattering matrix for an interface, considering outer sections. Supports left and right configurations (`EffectiveInterfaceLeft`, `EffectiveInterfaceRight`).
+
+#### `Structure`
+Represents a layered system of chunks and interfaces.  
+**Main methods:**
+- `split()` → Divides the structure into segments for simulation.  
+- `sample()` → Generates a spatial grid for near-field calculations.  
+- `effective_permittivity()` → Computes the effective permittivity of each layer.
+
+#### `TMM`
+Implements standard scattering-type TMM for 1D guided-mode systems.  
+**Main methods:**
+- `global_scattering_matrix()` → Computes the overall scattering matrix of the structure.  
+- `reflection()` → Computes reflection coefficients.  
+- `band_structure()` → Computes guided-mode dispersion relations.
+
+#### `TMM_3PD`
+Implements the three-channel (3-port) TMM.  
+**Main methods:**
+- `global_scattering_matrix(c, γ)` → Computes the scattering matrix including far-field coupling with coupling strength `c` and phase `γ`.
+
+#### `TMM_sSNOM_Simple`
+Basic s-SNOM model. Computes near-field signals using an exponential tip–sample coupling coefficient.  
+
+#### `TMM_sSNOM_Advanced`
+Advanced s-SNOM model with:
+- Wavelength-dependent tip coupling  
+- Polaritonic wavelength support  
+- Tip radius and detector cutoff options  
+
+**Main methods:**
+- `scan(sites, resolution)` → Returns spatially resolved near-field maps.
+
+### Utility Functions
+
+- `levi_cevita_tensor(dim)` → Generates the Levi-Civita tensor.  
+- `matrix_array_inverse_3x3(A)` → Efficient inverse for 3×3 matrix arrays.
+
+---
+
 ## Materials Module
 
 The `materials.py` file defines the materials used in guided-mode and near-field simulations, providing classes and helper functions for graphene and hexagonal boron nitride (hBN) polaritons. It handles the calculation of effective permittivities, mode wavevectors, and field profiles.
