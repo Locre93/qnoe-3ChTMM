@@ -53,6 +53,47 @@ This script demonstrates how `qnoe-3ChTMM` can be used to study polaritonic crys
 
 ---
 
+## Materials Module
+
+The `materials.py` file defines the materials used in guided-mode and near-field simulations, providing classes and helper functions for graphene and hexagonal boron nitride (hBN) polaritons. It handles the calculation of effective permittivities, mode wavevectors, and field profiles.
+
+### Key Functions
+
+- `reflecting_interface(k, ϕ, r=1)`  
+  Returns a `ScatteringMatrix` representing a reflective interface with phase `ϕ` and amplitude `r`.
+
+- `fermi_energy(n)`  
+  Computes the Fermi energy of graphene given a carrier density `n` [1/cm²].
+
+### Classes
+
+#### HexagonalBoronNitride
+Models hyperbolic phonon polaritons in hBN, including isotope-dependent material properties.  
+
+**Main methods:**
+- `dielectric_permittivity(k)` → Returns the in-plane and out-of-plane permittivities [ϵ_x, ϵ_y, ϵ_z] at wavenumber `k`.
+- `magnetic_permeability()` → Returns the magnetic permeability tensor (unity in most cases).
+- `mode_coefficients(k, ϵ)` → Returns reflection coefficients, phase shifts, and mode parameters for the guided polariton modes.
+- `mode_wavevector(k, n, ϵ)` → Computes the mode wavevector for the `n`th polariton mode.
+- `mode_effective_permittivity(k, n, ϵ)` → Returns the effective permittivity of a given mode.
+- `mode_effective_refraction_index(k, n, ϵ)` → Computes the effective refractive index.
+- `mode_profile(k, n, ϵ)` → Returns callable functions for the in-plane and out-of-plane electric and magnetic fields (Ex(z), Ez(z), By(z)).
+
+#### Graphene
+Models graphene plasmonic modes.  
+
+**Main methods:**
+- `mode_wavevector(k, Ef, ϵ, Γ=0.0037)` → Computes the graphene plasmon wavevector for Fermi energy `Ef` and environment permittivity `ϵ`.
+- `mode_effective_permittivity(k, Ef, ϵ, Γ=0.0037)` → Computes the effective permittivity of the graphene plasmon mode.
+
+### Notes
+- All wavenumbers `k` are in [cm⁻¹] (1/λ).  
+- The classes are designed for the **quasistatic limit**: \( q \gg \omega \epsilon / c \).  
+- `materials.py` is used in examples for constructing **chunks** and **interfaces** with mode-dependent properties.
+
+---
+
+
 ## License
 The package qnoe-3ChTMM is distributed under the GNU Lesser General Public License v3 (LGPLv3).
 
