@@ -1,5 +1,5 @@
 # qnoe-3ChTMM
-Package for solving 3-channel scattering processess between one-dimensional guided modes and a generic scattering element with Transfer Matrix Method (TMM).
+Python package implementing a three-channel Transfer Matrix Method (TMM) to model scattering processes between one-dimensional guided modes and a localized scattering element. The framework combines standard TMM propagation in the near-field channel with a symmetry-constrained 3×3 scattering matrix describing coupling to a far-field channel. It is designed for efficient and physically interpretable simulations of 1D guided-mode scattering problems, with particular relevance to near-field nanophotonics and polaritonic systems.
 
 ## Installation
 1. Clone the repository to your hard-drive
